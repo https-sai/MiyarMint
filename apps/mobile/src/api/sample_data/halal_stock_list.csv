@@ -1,0 +1,13 @@
+ticker,company_name,status,last_screened_at
+AAPL,Apple Inc.,compliant,2026-08-11 02:00:00
+MSFT,Microsoft Corporation,compliant,2026-08-11 02:00:00
+NVDA,NVIDIA Corporation,compliant,2026-08-11 02:00:00
+GOOGL,Alphabet Inc.,compliant,2026-08-11 02:00:00
+AMZN,Amazon.com Inc.,under_review,2026-08-11 02:00:00
+TSLA,Tesla Inc.,under_review,2026-08-11 02:00:00
+META,Meta Platforms Inc.,under_review,2026-08-11 02:05:00
+JPM,JPMorgan Chase & Co.,non_compliant,2026-08-11 02:00:00
+BAC,Bank of America Corp.,non_compliant,2026-08-11 02:00:00
+BUD,Anheuser-Busch InBev,non_compliant,2026-08-11 02:00:00
+COST,Costco Wholesale Corp.,compliant,2026-08-11 02:05:00
+ADBE,Adobe Inc.,compliant,2026-08-11 02:05:00
