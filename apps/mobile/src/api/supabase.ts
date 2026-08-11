@@ -5,3 +5,4 @@ const supabaseUrl = process.env.DB_URL!;
 const supabaseAnonKey = process.env.DB_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
