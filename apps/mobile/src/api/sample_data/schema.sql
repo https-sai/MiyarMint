@@ -2,6 +2,7 @@ create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text check (role in ('student', 'educator', 'admin')) not null default 'student',
   display_name text,
+  push_token text,
   created_at timestamptz default now()
 );
 
@@ -43,3 +44,6 @@ create table trades (
   price numeric not null,
   executed_at timestamptz default now()
 );
+
+-- Run once against an existing project:
+-- alter table profiles add column if not exists push_token text;

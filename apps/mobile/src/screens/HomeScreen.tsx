@@ -1,13 +1,17 @@
 import { useRef } from "react";
 import { Animated, ScrollView, StyleSheet, View } from "react-native";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Hero } from "../components/Hero";
 import { ProfilesSection } from "../components/ProfilesSection";
 import { ClassroomsSection } from "../components/ClassroomsSection";
 import { PortfoliosSection } from "../components/PortfoliosSection";
 import { colors } from "../theme/tokens";
+import type { RootStackParamList } from "../navigation/RootNavigator";
 
-export function HomeScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, "Home">;
+
+export function HomeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const profilesY = useRef(0);
@@ -31,7 +35,10 @@ export function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
       >
-        <Hero onExplore={handleExplore} />
+        <Hero
+          onExplore={handleExplore}
+          onSignIn={() => navigation.navigate("Auth")}
+        />
         <View
           onLayout={(event) => {
             profilesY.current = event.nativeEvent.layout.y;

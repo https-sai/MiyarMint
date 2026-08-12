@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: miyarmint-api
+    runtime: node
+    rootDir: server/api
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: DB_URL
+        sync: false
+      - key: DB_SERVICE_ROLE_KEY
+        sync: false
+      - key: DB_JWKS_URL
+        sync: false
+      - key: MASSIVE_API_KEY
+        sync: false
+      - key: HALAL_TERMINAL_API_KEY
+        sync: false
+      - key: POSTHOG_API_KEY
+        sync: false

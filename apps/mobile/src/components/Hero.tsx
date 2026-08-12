@@ -13,9 +13,10 @@ import { IslamicGeometricBackground } from "./IslamicGeometricBackground";
 
 type HeroProps = {
   onExplore: () => void;
+  onSignIn: () => void;
 };
 
-export function Hero({ onExplore }: HeroProps) {
+export function Hero({ onExplore, onSignIn }: HeroProps) {
   const { height } = useWindowDimensions();
   const brandOpacity = useRef(new Animated.Value(0)).current;
   const brandY = useRef(new Animated.Value(18)).current;
@@ -72,31 +73,36 @@ export function Hero({ onExplore }: HeroProps) {
         <Text style={styles.headline}>Learn markets the halal way.</Text>
         <Text style={styles.support}>
           Classrooms, paper portfolios, and screened equities for students and
-          educators—static preview only.
+          educators.
         </Text>
 
-        <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
-          <Pressable
-            onPress={onExplore}
-            onPressIn={() =>
-              Animated.spring(ctaScale, {
-                toValue: 0.97,
-                useNativeDriver: true,
-                speed: 40,
-              }).start()
-            }
-            onPressOut={() =>
-              Animated.spring(ctaScale, {
-                toValue: 1,
-                useNativeDriver: true,
-                speed: 40,
-              }).start()
-            }
-            style={styles.cta}
-          >
-            <Text style={styles.ctaLabel}>See how it works</Text>
+        <View style={styles.ctaRow}>
+          <Animated.View style={{ transform: [{ scale: ctaScale }] }}>
+            <Pressable
+              onPress={onSignIn}
+              onPressIn={() =>
+                Animated.spring(ctaScale, {
+                  toValue: 0.97,
+                  useNativeDriver: true,
+                  speed: 40,
+                }).start()
+              }
+              onPressOut={() =>
+                Animated.spring(ctaScale, {
+                  toValue: 1,
+                  useNativeDriver: true,
+                  speed: 40,
+                }).start()
+              }
+              style={styles.cta}
+            >
+              <Text style={styles.ctaLabel}>Student sign in</Text>
+            </Pressable>
+          </Animated.View>
+          <Pressable onPress={onExplore} style={styles.ctaGhost}>
+            <Text style={styles.ctaGhostLabel}>See how it works</Text>
           </Pressable>
-        </Animated.View>
+        </View>
       </Animated.View>
     </View>
   );
@@ -138,6 +144,10 @@ const styles = StyleSheet.create({
     maxWidth: 320,
     marginBottom: spacing.sm,
   },
+  ctaRow: {
+    gap: spacing.sm,
+    alignItems: "flex-start",
+  },
   cta: {
     alignSelf: "flex-start",
     backgroundColor: colors.chalk,
@@ -148,5 +158,14 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_600SemiBold",
     fontSize: 15,
     color: colors.ink,
+  },
+  ctaGhost: {
+    alignSelf: "flex-start",
+    paddingVertical: spacing.sm,
+  },
+  ctaGhostLabel: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 15,
+    color: "rgba(251, 253, 252, 0.9)",
   },
 });
