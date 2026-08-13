@@ -13,6 +13,118 @@ function makeJoinCode() {
   return code;
 }
 
+classroomsRouter.get(
+  "/mine",
+  verifySupabaseAsymmetricToken,
+  async (req, res) => {
+    const userId = req.userId;
+    if (!userId) {
+      res.status(401).json({ error: "Unauthorized." });
+      return;
+    }
+
+    try {
+      const { data: memberships, error: membershipError } = await supabase
+        .from("classroom_members")
+        .select("classroom_id, joined_at")
+        .eq("student_id", userId);
+
+      if (membershipError) throw membershipError;
+
+      const classroomIds = (memberships ?? []).map((m) => m.classroom_id);
+      if (classroomIds.length === 0) {
+        res.json({ classrooms: [] });
+        return;
+      }
+
+      const { data: classrooms, error: classroomError } = await supabase
+        .from("classrooms")
+        .select("id, name, join_code, educator_id, created_at")
+        .in("id", classroomIds)
+        .order("created_at", { ascending: true });
+
+      if (classroomError) throw classroomError;
+
+      const educatorIds = [
+        ...new Set(
+          (classrooms ?? [])
+            .map((c) => c.educator_id)
+            .filter((id): id is string => typeof id === "string"),
+        ),
+      ];
+
+      const placeholderId = "00000000-0000-0000-0000-000000000000";
+
+      const { data: educators, error: educatorError } = await supabase
+        .from("profiles")
+        .select("id, display_name, role")
+        .in("id", educatorIds.length > 0 ? educatorIds : [placeholderId]);
+
+      if (educatorError) throw educatorError;
+
+      const { data: members, error: membersError } = await supabase
+        .from("classroom_members")
+        .select("classroom_id, student_id, joined_at")
+        .in("classroom_id", classroomIds);
+
+      if (membersError) throw membersError;
+
+      const studentIds = [
+        ...new Set((members ?? []).map((m) => m.student_id)),
+      ];
+
+      const { data: studentProfiles, error: studentsError } = await supabase
+        .from("profiles")
+        .select("id, display_name, role")
+        .in("id", studentIds.length > 0 ? studentIds : [placeholderId]);
+
+      if (studentsError) throw studentsError;
+
+      const educatorById = new Map(
+        (educators ?? []).map((p) => [p.id, p] as const),
+      );
+      const profileById = new Map(
+        (studentProfiles ?? []).map((p) => [p.id, p] as const),
+      );
+
+      const payload = (classrooms ?? []).map((classroom) => {
+        const educator = classroom.educator_id
+          ? educatorById.get(classroom.educator_id)
+          : undefined;
+        const classroomMembers = (members ?? [])
+          .filter((m) => m.classroom_id === classroom.id)
+          .map((m) => {
+            const profile = profileById.get(m.student_id);
+            return {
+              student_id: m.student_id,
+              display_name: profile?.display_name ?? "Student",
+              joined_at: m.joined_at,
+            };
+          });
+
+        return {
+          id: classroom.id,
+          name: classroom.name,
+          join_code: classroom.join_code,
+          educator: educator
+            ? {
+                id: educator.id,
+                display_name: educator.display_name ?? "Educator",
+              }
+            : null,
+          members: classroomMembers,
+        };
+      });
+
+      res.json({ classrooms: payload });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Classroom lookup failed";
+      res.status(500).json({ error: message });
+    }
+  },
+);
+
 classroomsRouter.post("/", verifySupabaseAsymmetricToken, async (req, res) => {
   const userId = req.userId;
   if (!userId) {

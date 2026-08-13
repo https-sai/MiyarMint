@@ -27,6 +27,15 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+export type Trade = {
+  id: string;
+  ticker: string;
+  side: "buy" | "sell";
+  quantity: number | string;
+  price: number | string;
+  executed_at: string;
+};
+
 export type PortfolioResponse = {
   portfolio: {
     id: string;
@@ -34,13 +43,25 @@ export type PortfolioResponse = {
     cash_balance: number | string;
     created_at: string;
   };
-  trades: Array<{
-    id: string;
-    ticker: string;
-    side: "buy" | "sell";
-    quantity: number | string;
-    price: number | string;
-    executed_at: string;
+  trades: Trade[];
+};
+
+export type HalalStock = {
+  ticker: string;
+  company_name: string | null;
+  status: "compliant" | "non_compliant" | "under_review";
+  last_screened_at: string | null;
+};
+
+export type ClassroomSummary = {
+  id: string;
+  name: string;
+  join_code: string;
+  educator: { id: string; display_name: string } | null;
+  members: Array<{
+    student_id: string;
+    display_name: string;
+    joined_at: string;
   }>;
 };
 
@@ -48,19 +69,12 @@ export function getPortfolio(studentId: string) {
   return apiFetch<PortfolioResponse>(`/portfolios/${studentId}`);
 }
 
-export function getMarketQuote(ticker: string) {
-  return apiFetch(`/market/quote/${encodeURIComponent(ticker)}`);
+export function getHalalStocks() {
+  return apiFetch<{ stocks: HalalStock[] }>("/stocks");
 }
 
-export function getScreening(ticker: string) {
-  return apiFetch(`/screening/${encodeURIComponent(ticker)}`);
-}
-
-export function savePushToken(pushToken: string) {
-  return apiFetch("/profiles/me/push-token", {
-    method: "PATCH",
-    body: JSON.stringify({ pushToken }),
-  });
+export function getMyClassrooms() {
+  return apiFetch<{ classrooms: ClassroomSummary[] }>("/classrooms/mine");
 }
 
 export function joinClassroom(joinCode: string) {
@@ -79,10 +93,17 @@ export function placeTrade(input: {
   quantity: number;
 }) {
   return apiFetch<{
-    trade: PortfolioResponse["trades"][number];
+    trade: Trade;
     cash_balance: number;
   }>("/trades", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export function savePushToken(pushToken: string) {
+  return apiFetch("/profiles/me/push-token", {
+    method: "PATCH",
+    body: JSON.stringify({ pushToken }),
   });
 }

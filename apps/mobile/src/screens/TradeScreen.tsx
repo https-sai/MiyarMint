@@ -1,43 +1,67 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { joinClassroom, placeTrade } from "../api/client";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../auth/AuthContext";
+import { getPortfolio, placeTrade, type Trade } from "../api/client";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { colors, spacing } from "../theme/tokens";
+
+function formatMoney(value: number | string) {
+  const n = typeof value === "string" ? Number(value) : value;
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(n) ? n : 0);
+}
 
 type Props = NativeStackScreenProps<RootStackParamList, "Trade">;
 
 export function TradeScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-  const [joinCode, setJoinCode] = useState("");
+  const { user } = useAuth();
   const [ticker, setTicker] = useState("AAPL");
   const [quantity, setQuantity] = useState("1");
+  const [trades, setTrades] = useState<Trade[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const onJoin = async () => {
-    setBusy(true);
+  const load = useCallback(async () => {
+    if (!user?.id) return;
     setError(null);
-    setMessage(null);
     try {
-      const result = await joinClassroom(joinCode);
-      setMessage(`Joined ${result.classroom.name}`);
-      setJoinCode("");
+      const portfolio = await getPortfolio(user.id);
+      setTrades(portfolio.trades);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Join failed");
+      setError(err instanceof Error ? err.message : "Failed to load trades");
     } finally {
-      setBusy(false);
+      setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [user?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      void load();
+    }, [load]),
+  );
 
   const onTrade = async (side: "buy" | "sell") => {
     setBusy(true);
@@ -52,6 +76,7 @@ export function TradeScreen({ navigation }: Props) {
       setMessage(
         `${result.trade.side.toUpperCase()} ${result.trade.quantity} ${result.trade.ticker} confirmed`,
       );
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Trade failed");
     } finally {
@@ -60,69 +85,92 @@ export function TradeScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing.lg }]}>
+    <KeyboardAvoidingView
+      style={[styles.root, { paddingTop: insets.top + spacing.lg }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
       <Pressable onPress={() => navigation.goBack()} style={styles.back}>
         <Text style={styles.backLabel}>Back</Text>
       </Pressable>
 
-      <Text style={styles.title}>Classroom & trade</Text>
+      <Text style={styles.title}>Trade</Text>
       <Text style={styles.support}>
-        Join with a code, then place a paper trade in a compliant ticker.
+        Place a paper buy or sell against compliant tickers.
       </Text>
 
-      <Text style={styles.label}>Join code</Text>
-      <TextInput
-        value={joinCode}
-        onChangeText={setJoinCode}
-        autoCapitalize="characters"
-        placeholder="ABC123"
-        placeholderTextColor={colors.mute}
-        style={styles.input}
-      />
-      <Pressable
-        onPress={onJoin}
-        disabled={busy || joinCode.trim().length < 4}
-        style={[styles.cta, (busy || joinCode.trim().length < 4) && styles.disabled]}
+      <ScrollView
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + spacing.xl,
+          gap: spacing.md,
+        }}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load();
+            }}
+            tintColor={colors.mint}
+          />
+        }
       >
-        <Text style={styles.ctaLabel}>Join classroom</Text>
-      </Pressable>
+        <Text style={styles.label}>Ticker</Text>
+        <TextInput
+          value={ticker}
+          onChangeText={setTicker}
+          autoCapitalize="characters"
+          style={styles.input}
+        />
+        <Text style={styles.label}>Quantity</Text>
+        <TextInput
+          value={quantity}
+          onChangeText={setQuantity}
+          keyboardType="decimal-pad"
+          style={styles.input}
+        />
 
-      <Text style={[styles.label, { marginTop: spacing.xl }]}>Ticker</Text>
-      <TextInput
-        value={ticker}
-        onChangeText={setTicker}
-        autoCapitalize="characters"
-        style={styles.input}
-      />
-      <Text style={styles.label}>Quantity</Text>
-      <TextInput
-        value={quantity}
-        onChangeText={setQuantity}
-        keyboardType="decimal-pad"
-        style={styles.input}
-      />
+        <View style={styles.row}>
+          <Pressable
+            onPress={() => void onTrade("buy")}
+            disabled={busy}
+            style={[styles.cta, styles.flex, busy && styles.disabled]}
+          >
+            <Text style={styles.ctaLabel}>Buy</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => void onTrade("sell")}
+            disabled={busy}
+            style={[styles.ctaGhost, styles.flex, busy && styles.disabled]}
+          >
+            <Text style={styles.ctaGhostLabel}>Sell</Text>
+          </Pressable>
+        </View>
 
-      <View style={styles.row}>
-        <Pressable
-          onPress={() => void onTrade("buy")}
-          disabled={busy}
-          style={[styles.cta, styles.flex, busy && styles.disabled]}
-        >
-          <Text style={styles.ctaLabel}>Buy</Text>
-        </Pressable>
-        <Pressable
-          onPress={() => void onTrade("sell")}
-          disabled={busy}
-          style={[styles.ctaGhost, styles.flex, busy && styles.disabled]}
-        >
-          <Text style={styles.ctaGhostLabel}>Sell</Text>
-        </Pressable>
-      </View>
+        {busy ? <ActivityIndicator color={colors.mint} /> : null}
+        {message ? <Text style={styles.message}>{message}</Text> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      {busy ? <ActivityIndicator color={colors.mint} style={{ marginTop: spacing.md }} /> : null}
-      {message ? <Text style={styles.message}>{message}</Text> : null}
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </View>
+        <Text style={[styles.sectionTitle, { marginTop: spacing.lg }]}>
+          Recent trades
+        </Text>
+        {loading ? (
+          <ActivityIndicator color={colors.mint} />
+        ) : trades.length === 0 ? (
+          <Text style={styles.empty}>No trades yet.</Text>
+        ) : (
+          trades.map((trade) => (
+            <View key={trade.id} style={styles.tradeRow}>
+              <Text style={styles.tradeTicker}>{trade.ticker}</Text>
+              <Text style={styles.tradeMeta}>
+                {trade.side.toUpperCase()} · {trade.quantity} @{" "}
+                {formatMoney(trade.price)}
+              </Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -165,7 +213,7 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_400Regular",
     fontSize: 16,
     color: colors.ink,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   row: { flexDirection: "row", gap: spacing.sm },
   flex: { flex: 1 },
@@ -190,13 +238,35 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.5 },
   message: {
-    marginTop: spacing.md,
     fontFamily: "Manrope_400Regular",
     color: colors.mint,
   },
   error: {
-    marginTop: spacing.md,
     fontFamily: "Manrope_400Regular",
     color: "#9B3B2E",
+  },
+  sectionTitle: {
+    fontFamily: "Fraunces_600SemiBold",
+    fontSize: 22,
+    color: colors.ink,
+  },
+  empty: {
+    fontFamily: "Manrope_400Regular",
+    color: colors.mute,
+  },
+  tradeRow: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.mist,
+  },
+  tradeTicker: {
+    fontFamily: "Manrope_600SemiBold",
+    color: colors.ink,
+    fontSize: 16,
+  },
+  tradeMeta: {
+    fontFamily: "Manrope_400Regular",
+    color: colors.mute,
+    marginTop: 2,
   },
 });

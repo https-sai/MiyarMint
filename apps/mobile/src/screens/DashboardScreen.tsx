@@ -12,7 +12,12 @@ import { useFocusEffect } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../auth/AuthContext";
-import { getPortfolio, type PortfolioResponse } from "../api/client";
+import {
+  getHalalStocks,
+  getPortfolio,
+  type HalalStock,
+  type PortfolioResponse,
+} from "../api/client";
 import type { RootStackParamList } from "../navigation/RootNavigator";
 import { colors, spacing } from "../theme/tokens";
 
@@ -25,12 +30,19 @@ function formatMoney(value: number | string) {
   }).format(Number.isFinite(n) ? n : 0);
 }
 
+const statusLabel: Record<HalalStock["status"], string> = {
+  compliant: "Compliant",
+  non_compliant: "Non-compliant",
+  under_review: "Under review",
+};
+
 type Props = NativeStackScreenProps<RootStackParamList, "Dashboard">;
 
 export function DashboardScreen({ navigation }: Props) {
   const insets = useSafeAreaInsets();
   const { user, signOut } = useAuth();
-  const [data, setData] = useState<PortfolioResponse | null>(null);
+  const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null);
+  const [stocks, setStocks] = useState<HalalStock[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,10 +51,14 @@ export function DashboardScreen({ navigation }: Props) {
     if (!user?.id) return;
     setError(null);
     try {
-      const portfolio = await getPortfolio(user.id);
-      setData(portfolio);
+      const [portfolioRes, stocksRes] = await Promise.all([
+        getPortfolio(user.id),
+        getHalalStocks(),
+      ]);
+      setPortfolio(portfolioRes);
+      setStocks(stocksRes.stocks);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load portfolio");
+      setError(err instanceof Error ? err.message : "Failed to load dashboard");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -94,31 +110,50 @@ export function DashboardScreen({ navigation }: Props) {
           <View style={styles.balanceBlock}>
             <Text style={styles.balanceLabel}>Cash balance</Text>
             <Text style={styles.balanceValue}>
-              {formatMoney(data?.portfolio.cash_balance ?? 0)}
+              {formatMoney(portfolio?.portfolio.cash_balance ?? 0)}
             </Text>
             <Text style={styles.balanceHint}>
               Virtual funds for classroom trading practice.
             </Text>
           </View>
 
-          <Pressable
-            onPress={() => navigation.navigate("Trade")}
-            style={styles.tradeCta}
-          >
-            <Text style={styles.tradeCtaLabel}>Join class / place trade</Text>
-          </Pressable>
+          <View style={styles.navRow}>
+            <Pressable
+              onPress={() => navigation.navigate("Trade")}
+              style={[styles.navCta, styles.navPrimary]}
+            >
+              <Text style={styles.navPrimaryLabel}>Trade</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => navigation.navigate("Classroom")}
+              style={[styles.navCta, styles.navSecondary]}
+            >
+              <Text style={styles.navSecondaryLabel}>Classroom</Text>
+            </Pressable>
+          </View>
 
           <View>
-            <Text style={styles.sectionTitle}>Recent trades</Text>
-            {(data?.trades.length ?? 0) === 0 ? (
-              <Text style={styles.empty}>No trades yet.</Text>
+            <Text style={styles.sectionTitle}>Halal stock list</Text>
+            {stocks.length === 0 ? (
+              <Text style={styles.empty}>No screened stocks yet.</Text>
             ) : (
-              data?.trades.map((trade) => (
-                <View key={trade.id} style={styles.tradeRow}>
-                  <Text style={styles.tradeTicker}>{trade.ticker}</Text>
-                  <Text style={styles.tradeMeta}>
-                    {trade.side.toUpperCase()} · {trade.quantity} @{" "}
-                    {formatMoney(trade.price)}
+              stocks.map((stock) => (
+                <View key={stock.ticker} style={styles.stockRow}>
+                  <View style={styles.stockMain}>
+                    <Text style={styles.stockTicker}>{stock.ticker}</Text>
+                    <Text style={styles.stockName}>
+                      {stock.company_name ?? "—"}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.stockStatus,
+                      stock.status === "compliant" && styles.statusOk,
+                      stock.status === "non_compliant" && styles.statusBad,
+                      stock.status === "under_review" && styles.statusReview,
+                    ]}
+                  >
+                    {statusLabel[stock.status]}
                   </Text>
                 </View>
               ))
@@ -190,14 +225,31 @@ const styles = StyleSheet.create({
     color: colors.mute,
     fontSize: 14,
   },
-  tradeCta: {
-    backgroundColor: colors.mint,
+  navRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  navCta: {
+    flex: 1,
     paddingVertical: spacing.md,
     alignItems: "center",
   },
-  tradeCtaLabel: {
+  navPrimary: {
+    backgroundColor: colors.mint,
+  },
+  navSecondary: {
+    borderWidth: 1,
+    borderColor: colors.mint,
+    backgroundColor: colors.chalk,
+  },
+  navPrimaryLabel: {
     fontFamily: "Manrope_600SemiBold",
     color: colors.chalk,
+    fontSize: 15,
+  },
+  navSecondaryLabel: {
+    fontFamily: "Manrope_600SemiBold",
+    color: colors.mint,
     fontSize: 15,
   },
   sectionTitle: {
@@ -210,19 +262,34 @@ const styles = StyleSheet.create({
     fontFamily: "Manrope_400Regular",
     color: colors.mute,
   },
-  tradeRow: {
+  stockRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.mist,
+    gap: spacing.md,
   },
-  tradeTicker: {
+  stockMain: {
+    flex: 1,
+  },
+  stockTicker: {
     fontFamily: "Manrope_600SemiBold",
     color: colors.ink,
     fontSize: 16,
   },
-  tradeMeta: {
+  stockName: {
     fontFamily: "Manrope_400Regular",
     color: colors.mute,
     marginTop: 2,
+    fontSize: 13,
   },
+  stockStatus: {
+    fontFamily: "Manrope_600SemiBold",
+    fontSize: 12,
+  },
+  statusOk: { color: colors.mint },
+  statusBad: { color: "#9B3B2E" },
+  statusReview: { color: colors.clay },
 });
