@@ -11,19 +11,36 @@ declare global {
   }
 }
 
-// Your unique Supabase JWKS endpoint
-const SUPABASE_JWKS_URL = process.env.DB_JWKS_URL!;
+function resolveJwksUrl(): string {
+  const configured = process.env.DB_JWKS_URL?.trim();
+  const dbUrl = process.env.DB_URL?.replace(/\/$/, "");
+
+  if (configured) {
+    // Older docs used /auth/v1/jwks, which 404s on Supabase.
+    if (configured.endsWith("/auth/v1/jwks")) {
+      return configured.replace(/\/auth\/v1\/jwks$/, "/auth/v1/.well-known/jwks.json");
+    }
+    return configured;
+  }
+
+  if (dbUrl) {
+    return `${dbUrl}/auth/v1/.well-known/jwks.json`;
+  }
+
+  throw new Error("DB_JWKS_URL or DB_URL must be set for JWT verification.");
+}
+
+const SUPABASE_JWKS_URL = resolveJwksUrl();
 
 const client = jwksClient({
   jwksUri: SUPABASE_JWKS_URL,
-  cache: true, // Cache public keys in memory
-  cacheMaxEntries: 5, // Maximum number of keys to keep in cache
-  cacheMaxAge: 600000, // 10 minutes cache lifespan
-  rateLimit: true, // Prevent JWKS endpoint spamming
+  cache: true,
+  cacheMaxEntries: 5,
+  cacheMaxAge: 600000,
+  rateLimit: true,
   jwksRequestsPerMinute: 10,
 });
 
-// Helper function to dynamically grab the correct public key using the token's header 'kid'
 function getKey(header: JwtHeader, callback: SigningKeyCallback): void {
   if (!header.kid) {
     callback(new Error("Missing kid in token header"));
@@ -60,13 +77,12 @@ export function verifySupabaseAsymmetricToken(
     return;
   }
 
-  // Verify using the dynamic signing key callback
   jwt.verify(
     token,
     getKey,
     {
-      algorithms: ["ES256", "RS256"], // Accept Supabase asymmetric cryptographic protocols
-      audience: "authenticated", // Match standard user session context
+      algorithms: ["ES256", "RS256"],
+      audience: "authenticated",
     },
     (err, decodedClaims) => {
       if (err || !decodedClaims || typeof decodedClaims === "string") {
@@ -76,7 +92,6 @@ export function verifySupabaseAsymmetricToken(
         return;
       }
 
-      // Attach the verified claims context securely to the request lifecycle
       req.userClaims = decodedClaims;
       req.userId = decodedClaims.sub;
 
