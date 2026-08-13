@@ -18,5 +18,3 @@ services:
         sync: false
       - key: HALAL_TERMINAL_API_KEY
         sync: false
-      - key: POSTHOG_API_KEY
-        sync: false

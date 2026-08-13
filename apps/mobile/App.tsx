@@ -11,12 +11,9 @@ import {
   Manrope_400Regular,
   Manrope_600SemiBold,
 } from "@expo-google-fonts/manrope";
-import { PostHogProvider } from "posthog-react-native";
 import { AuthProvider } from "./src/auth/AuthContext";
 import { RootNavigator } from "./src/navigation/RootNavigator";
 import { colors } from "./src/theme/tokens";
-
-const posthogKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -35,7 +32,7 @@ export default function App() {
     );
   }
 
-  const tree = (
+  return (
     <SafeAreaProvider>
       <AuthProvider>
         <RootNavigator />
@@ -43,19 +40,6 @@ export default function App() {
       </AuthProvider>
     </SafeAreaProvider>
   );
-
-  if (posthogKey) {
-    return (
-      <PostHogProvider
-        apiKey={posthogKey}
-        options={{ host: "https://us.i.posthog.com" }}
-      >
-        {tree}
-      </PostHogProvider>
-    );
-  }
-
-  return tree;
 }
 
 const styles = StyleSheet.create({

@@ -2,7 +2,6 @@ import { Router } from "express";
 import { supabase } from "../services/supabase.js";
 import { getLastQuote } from "../services/massive.js";
 import { sendExpoPush } from "../services/notifications.js";
-import { captureServerEvent } from "../services/posthog.js";
 import { verifySupabaseAsymmetricToken } from "../middleware/auth.js";
 
 export const tradesRouter = Router();
@@ -111,13 +110,6 @@ tradesRouter.post("/", verifySupabaseAsymmetricToken, async (req, res) => {
         // Push is best-effort at skeleton stage.
       }
     }
-
-    captureServerEvent(userId, "trade_completed", {
-      ticker,
-      side,
-      quantity,
-      price,
-    });
 
     res.status(201).json({
       trade,
