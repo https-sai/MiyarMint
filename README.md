@@ -1,4 +1,4 @@
-# Miyarmint
+# Myrmint
 
 Paper trading for students and educators, limited to **halal-screened equities**. Sign in, join a classroom, and buy or sell against a simulated portfolio.
 
