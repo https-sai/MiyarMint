@@ -1,3 +1,4 @@
+import { Search } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { ChangeText } from "@/components/ChangeText"
@@ -22,22 +23,49 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { holdings, portfolioSummary, quotes, trades } from "@/data/mock"
+import {
+  holdings,
+  portfolioSummary,
+  quotes,
+  trades,
+  watchlist,
+} from "@/data/mock"
 import { formatMoney } from "@/lib/format"
+import { cn } from "@/lib/utils"
+
+const catalog = Object.entries(quotes).map(([ticker, quote]) => ({
+  ticker,
+  ...quote,
+}))
 
 export function TradePage() {
   const [ticker, setTicker] = useState("AAPL")
+  const [query, setQuery] = useState("")
   const [quantity, setQuantity] = useState("1")
   const [side, setSide] = useState<"buy" | "sell">("buy")
   const [notice, setNotice] = useState<string | null>(null)
 
-  const quote = quotes[ticker.toUpperCase()] ?? quotes.AAPL
+  const symbol = ticker.toUpperCase()
+  const quote = quotes[symbol] ?? quotes.AAPL
   const estimated = useMemo(() => {
     const qty = Number(quantity) || 0
     return qty * quote.price
   }, [quantity, quote.price])
 
   const canTrade = quote.status === "compliant"
+  const results = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!needle) return []
+    return catalog.filter(
+      (row) =>
+        row.ticker.toLowerCase().includes(needle) ||
+        row.name.toLowerCase().includes(needle),
+    )
+  }, [query])
+
+  function selectTicker(next: string) {
+    setTicker(next)
+  }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -45,6 +73,69 @@ export function TradePage() {
         title="Trade"
         description="Orders fill at the last-trade quote. Only compliant tickers can be traded."
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Search stocks</CardTitle>
+          <CardDescription>
+            Look up a ticker or company name, then load it into the ticket
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="stock-search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search ticker or name — AAPL, Microsoft…"
+              className="h-10 pl-9"
+              autoComplete="off"
+              aria-label="Search stocks"
+            />
+          </div>
+
+          {query.trim() ? (
+            <div className="divide-y divide-border border border-border">
+              {results.length === 0 ? (
+                <p className="px-3 py-4 text-sm text-muted-foreground">
+                  No names matched “{query.trim()}”.
+                </p>
+              ) : (
+                results.map((row) => (
+                  <button
+                    key={row.ticker}
+                    type="button"
+                    onClick={() => selectTicker(row.ticker)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/60",
+                      row.ticker === symbol && "bg-primary/10",
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="font-mono font-medium tracking-wide">
+                        {row.ticker}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {row.name}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <div className="text-right">
+                        <p className="font-mono tabular-nums">
+                          {formatMoney(row.price)}
+                        </p>
+                        <ChangeText value={row.changePct} className="text-xs" />
+                      </div>
+                      <StatusBadge status={row.status} />
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4 lg:grid-cols-[minmax(0,22rem)_1fr]">
         <Card>
@@ -58,7 +149,7 @@ export function TradePage() {
               onSubmit={(event) => {
                 event.preventDefault()
                 setNotice(
-                  `${side.toUpperCase()} ${quantity} ${ticker.toUpperCase()} queued at ${formatMoney(quote.price)}`,
+                  `${side.toUpperCase()} ${quantity} ${symbol} queued at ${formatMoney(quote.price)}`,
                 )
               }}
             >
@@ -109,7 +200,7 @@ export function TradePage() {
                 variant={side === "sell" ? "destructive" : "default"}
               >
                 {canTrade
-                  ? `${side === "buy" ? "Buy" : "Sell"} ${ticker.toUpperCase()}`
+                  ? `${side === "buy" ? "Buy" : "Sell"} ${symbol}`
                   : "Blocked — not compliant"}
               </Button>
               {notice ? (
@@ -124,7 +215,7 @@ export function TradePage() {
             <CardHeader>
               <CardTitle>
                 {quote.name}{" "}
-                <span className="text-muted-foreground">({ticker.toUpperCase() || "AAPL"})</span>
+                <span className="text-muted-foreground">({symbol || "AAPL"})</span>
               </CardTitle>
               <CardDescription>Last trade quote</CardDescription>
             </CardHeader>
@@ -162,7 +253,7 @@ export function TradePage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setTicker(row.ticker)}
+                  onClick={() => selectTicker(row.ticker)}
                 >
                   {row.ticker} · {row.shares}
                 </Button>
@@ -171,6 +262,52 @@ export function TradePage() {
           </Card>
         </div>
       </section>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Watchlist</CardTitle>
+          <CardDescription>Halal screening status is shown per ticker</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Ticker</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead className="text-right">Price</TableHead>
+                <TableHead className="text-right">Change</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {watchlist.map((row) => (
+                <TableRow
+                  key={row.ticker}
+                  className={cn(
+                    "cursor-pointer",
+                    row.ticker === symbol && "bg-primary/5",
+                  )}
+                  onClick={() => selectTicker(row.ticker)}
+                >
+                  <TableCell className="font-mono font-medium tracking-wide">
+                    {row.ticker}
+                  </TableCell>
+                  <TableCell>{row.name}</TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">
+                    {formatMoney(row.price)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <ChangeText value={row.changePct} />
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge status={row.status} />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

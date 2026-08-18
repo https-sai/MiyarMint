@@ -231,6 +231,66 @@ export const quotes: Record<
     volume: "162.1M",
     status: "compliant",
   },
+  GOOGL: {
+    name: "Alphabet Inc.",
+    price: 176.48,
+    changePct: 0.91,
+    open: 174.2,
+    high: 177.6,
+    low: 173.8,
+    volume: "19.6M",
+    status: "compliant",
+  },
+  COST: {
+    name: "Costco Wholesale Corp.",
+    price: 901.15,
+    changePct: 0.48,
+    open: 896.4,
+    high: 904.2,
+    low: 894.1,
+    volume: "1.8M",
+    status: "compliant",
+  },
+  ADBE: {
+    name: "Adobe Inc.",
+    price: 471.9,
+    changePct: -1.12,
+    open: 478.3,
+    high: 479.1,
+    low: 469.4,
+    volume: "3.4M",
+    status: "compliant",
+  },
+  TSLA: {
+    name: "Tesla Inc.",
+    price: 248.0,
+    changePct: 2.11,
+    open: 241.6,
+    high: 249.8,
+    low: 240.2,
+    volume: "82.7M",
+    status: "under_review",
+  },
+  AMZN: {
+    name: "Amazon.com Inc.",
+    price: 186.4,
+    changePct: 0.33,
+    open: 185.1,
+    high: 187.9,
+    low: 184.4,
+    volume: "31.5M",
+    status: "under_review",
+  },
+  JPM: {
+    name: "JPMorgan Chase & Co.",
+    price: 198.2,
+    changePct: -0.41,
+    open: 199.4,
+    high: 200.1,
+    low: 197.6,
+    volume: "8.9M",
+    status: "non_compliant",
+  },
 }
 
 export const leaderboard = [
@@ -286,6 +346,212 @@ export const lessons = [
     track: "Foundations",
     minutes: 9,
     progress: 0,
+  },
+]
+
+export type PathNodeStatus = "complete" | "current" | "locked" | "claimed"
+export type PathNodeType = "lesson" | "practice" | "chest" | "trophy"
+export type PathIcon =
+  | "shield"
+  | "wallet"
+  | "chart"
+  | "pie"
+  | "trophy"
+  | "search"
+  | "target"
+  | "crown"
+  | "chest"
+export type PathTheme = "mint" | "gold" | "violet"
+
+export type LearningPathNode = {
+  id: string
+  type: PathNodeType
+  status: PathNodeStatus
+  title: string
+  icon: PathIcon
+  minutes?: number
+  track?: string
+  xp: number
+  progress?: number
+}
+
+export type LearningUnit = {
+  id: string
+  number: number
+  title: string
+  description: string
+  theme: PathTheme
+  nodes: LearningPathNode[]
+}
+
+export const learningUnits: LearningUnit[] = [
+  {
+    id: "unit-1",
+    number: 1,
+    title: "Halal foundations",
+    description: "Screen names, fund the paper book, read a quote.",
+    theme: "mint",
+    nodes: [
+      {
+        id: "n1",
+        type: "lesson",
+        status: "complete",
+        title: "What makes an equity halal-screened?",
+        icon: "shield",
+        minutes: 12,
+        track: "Foundations",
+        xp: 20,
+        progress: 100,
+      },
+      {
+        id: "n2",
+        type: "lesson",
+        status: "complete",
+        title: "Paper portfolios and buying power",
+        icon: "wallet",
+        minutes: 8,
+        track: "Trading",
+        xp: 20,
+        progress: 100,
+      },
+      {
+        id: "n3",
+        type: "chest",
+        status: "claimed",
+        title: "Bonus chest",
+        icon: "chest",
+        xp: 10,
+      },
+      {
+        id: "n4",
+        type: "lesson",
+        status: "current",
+        title: "Reading a quote: last trade vs. close",
+        icon: "chart",
+        minutes: 10,
+        track: "Trading",
+        xp: 20,
+        progress: 40,
+      },
+      {
+        id: "n5",
+        type: "practice",
+        status: "locked",
+        title: "Drill: bid, last, and close",
+        icon: "target",
+        minutes: 4,
+        track: "Trading",
+        xp: 10,
+      },
+      {
+        id: "n6",
+        type: "lesson",
+        status: "locked",
+        title: "When a ticker is under review",
+        icon: "search",
+        minutes: 9,
+        track: "Foundations",
+        xp: 20,
+      },
+      {
+        id: "n7",
+        type: "trophy",
+        status: "locked",
+        title: "Unit 1 trophy",
+        icon: "crown",
+        xp: 30,
+      },
+    ],
+  },
+  {
+    id: "unit-2",
+    number: 2,
+    title: "Portfolio craft",
+    description: "Spread risk without haram sectors.",
+    theme: "gold",
+    nodes: [
+      {
+        id: "n8",
+        type: "lesson",
+        status: "locked",
+        title: "Diversification without haram sectors",
+        icon: "pie",
+        minutes: 14,
+        track: "Strategy",
+        xp: 20,
+      },
+      {
+        id: "n9",
+        type: "practice",
+        status: "locked",
+        title: "Drill: build a screened basket",
+        icon: "target",
+        minutes: 5,
+        track: "Strategy",
+        xp: 10,
+      },
+      {
+        id: "n10",
+        type: "chest",
+        status: "locked",
+        title: "Bonus chest",
+        icon: "chest",
+        xp: 10,
+      },
+      {
+        id: "n11",
+        type: "trophy",
+        status: "locked",
+        title: "Unit 2 trophy",
+        icon: "crown",
+        xp: 30,
+      },
+    ],
+  },
+  {
+    id: "unit-3",
+    number: 3,
+    title: "Classroom heat",
+    description: "Contests, ranks, and the monthly book.",
+    theme: "violet",
+    nodes: [
+      {
+        id: "n12",
+        type: "lesson",
+        status: "locked",
+        title: "Classroom contests and leaderboard rules",
+        icon: "trophy",
+        minutes: 6,
+        track: "Classroom",
+        xp: 20,
+      },
+      {
+        id: "n13",
+        type: "practice",
+        status: "locked",
+        title: "Drill: rank without overtrading",
+        icon: "target",
+        minutes: 4,
+        track: "Classroom",
+        xp: 10,
+      },
+      {
+        id: "n14",
+        type: "chest",
+        status: "locked",
+        title: "Bonus chest",
+        icon: "chest",
+        xp: 10,
+      },
+      {
+        id: "n15",
+        type: "trophy",
+        status: "locked",
+        title: "Path trophy",
+        icon: "crown",
+        xp: 50,
+      },
+    ],
   },
 ]
 

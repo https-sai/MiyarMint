@@ -1,46 +1,62 @@
 import { PreviewFrame } from "@/components/previews/PreviewFrame"
-import { lessons } from "@/data/mock"
+import { cn } from "@/lib/utils"
 
-const featured =
-  lessons.find((lesson) => lesson.progress > 0 && lesson.progress < 100) ?? lessons[2]
-const previewLessons = lessons.slice(0, 3)
+const previewNodes = [
+  { id: "p1", x: 28, done: true },
+  { id: "p2", x: 58, done: true },
+  { id: "p3", x: 78, current: true },
+  { id: "p4", x: 52, done: false },
+  { id: "p5", x: 24, done: false },
+]
 
 export function LearningPreview() {
-  if (!featured) return null
-
   return (
     <PreviewFrame to="/learn" label="Learning Preview" active="learn">
-      <div className="space-y-2.5">
+      <div className="relative h-full overflow-hidden">
         <p className="text-[11px] font-medium tracking-tight">Learn</p>
-        <div className="bg-white/5 p-2 ring-1 ring-white/10">
-          <p className="kicker text-[8px]">Continue</p>
-          <p className="mt-0.5 line-clamp-2 text-[11px] leading-tight font-medium">
-            {featured.title}
-          </p>
-          <div className="mt-2 h-1 overflow-hidden bg-white/10">
-            <div
-              className="h-full bg-primary"
-              style={{ width: `${featured.progress}%` }}
+        <p className="mt-0.5 font-mono text-[8px] tracking-[0.16em] text-muted-foreground uppercase">
+          Unit 1 · Halal foundations
+        </p>
+        <div className="relative mx-auto mt-1 h-[148px] w-[112px]">
+          <svg className="absolute inset-0" viewBox="0 0 112 148" aria-hidden>
+            <path
+              d="M34 16 C34 28 64 32 64 44 C64 56 82 60 82 74 C82 88 56 92 56 108 C56 122 30 124 30 138"
+              fill="none"
+              stroke="#1e293b"
+              strokeWidth="6"
+              strokeLinecap="round"
             />
-          </div>
-        </div>
-        <div className="space-y-1.5">
-          {previewLessons.map((lesson) => (
-            <div key={lesson.id} className="space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate text-[10px] font-medium">{lesson.title}</p>
-                <span className="shrink-0 font-mono text-[8px] text-muted-foreground">
-                  {lesson.minutes}M
-                </span>
-              </div>
-              <div className="h-1 overflow-hidden bg-white/10">
-                <div
-                  className="h-full bg-primary/80"
-                  style={{ width: `${lesson.progress}%` }}
-                />
-              </div>
-            </div>
+            <path
+              d="M34 16 C34 28 64 32 64 44 C64 56 82 60 82 74"
+              fill="none"
+              stroke="#2dd4bf"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+            />
+          </svg>
+          {previewNodes.map((node, i) => (
+            <span
+              key={node.id}
+              className={cn(
+                "absolute size-5 rounded-full shadow-[0_2px_0_rgba(0,0,0,0.35)]",
+                node.done && "bg-teal-400",
+                node.current && "bg-teal-300 ring-2 ring-teal-200/50",
+                !node.done && !node.current && "bg-slate-600",
+              )}
+              style={{ left: node.x, top: 8 + i * 26 }}
+            />
           ))}
+          <span
+            className="animate-buddy-idle absolute"
+            style={{ left: 92, top: 58 }}
+            aria-hidden
+          >
+            <span className="relative block size-5">
+              <span className="absolute top-0 left-1 size-1.5 rounded-full bg-emerald-400" />
+              <span className="absolute top-0 left-2.5 size-1.5 rounded-full bg-emerald-500" />
+              <span className="absolute top-1.5 left-0.5 size-4 rounded-full bg-teal-400" />
+            </span>
+          </span>
         </div>
       </div>
     </PreviewFrame>

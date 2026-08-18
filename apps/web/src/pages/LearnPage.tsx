@@ -1,100 +1,70 @@
 import { PageHeader } from "@/components/PageHeader"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { articles, lessons } from "@/data/mock"
+import { LearningPath } from "@/components/learn/LearningPath"
+import { articles, learningUnits } from "@/data/mock"
 
-const completed = lessons.filter((lesson) => lesson.progress === 100).length
-const overall = Math.round(
-  lessons.reduce((sum, lesson) => sum + lesson.progress, 0) / lessons.length,
-)
+const nodes = learningUnits.flatMap((unit) => unit.nodes)
+const completed = nodes.filter(
+  (node) => node.status === "complete" || node.status === "claimed",
+).length
+const earnedXp = nodes.reduce((sum, node) => {
+  if (node.status === "complete" || node.status === "claimed") return sum + node.xp
+  if (node.status === "current") {
+    return sum + Math.round(node.xp * ((node.progress ?? 0) / 100))
+  }
+  return sum
+}, 0)
+const currentUnit =
+  learningUnits.find((unit) => unit.nodes.some((node) => node.status === "current")) ??
+  learningUnits[0]
 
 export function LearnPage() {
-  const featured = lessons.find((lesson) => lesson.progress > 0 && lesson.progress < 100) ?? lessons[2]
-
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="relative mx-auto flex max-w-4xl flex-col gap-8 overflow-x-visible">
       <PageHeader
         title="Learn"
-        description="Short modules on screening, paper trading, and classroom contests."
+        description="Follow the path · tap a step to continue"
+        actions={
+          <div className="flex items-center gap-2">
+            <span className="rounded-full bg-amber-400 px-3 py-1 font-mono text-[11px] font-semibold tracking-[0.14em] text-amber-950 uppercase shadow-[0_3px_0_#b45309]">
+              {earnedXp} XP
+            </span>
+            <span className="rounded-full bg-teal-400 px-3 py-1 font-mono text-[11px] font-semibold tracking-[0.14em] text-teal-950 uppercase shadow-[0_3px_0_#0f766e]">
+              {completed}/{nodes.length}
+            </span>
+          </div>
+        }
       />
 
-      <Card>
-        <CardHeader>
-          <CardDescription>Continue</CardDescription>
-          <CardTitle>{featured.title}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Badge variant="outline">{featured.track}</Badge>
-            <span>{featured.minutes} min</span>
-          </div>
-          <Progress value={featured.progress} />
-          <Button>Resume lesson</Button>
-        </CardContent>
-      </Card>
+      {currentUnit ? (
+        <p className="font-mono text-xs tracking-[0.14em] text-muted-foreground uppercase">
+          Now in unit {currentUnit.number} · {currentUnit.title}
+        </p>
+      ) : null}
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {lessons.map((lesson) => (
-          <Card key={lesson.id}>
-            <CardHeader>
-              <CardDescription>{lesson.track}</CardDescription>
-              <CardTitle>{lesson.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <p className="text-sm text-muted-foreground">{lesson.minutes} minutes</p>
-              <Progress value={lesson.progress} />
-              <Button variant={lesson.progress === 0 ? "outline" : "secondary"} size="sm">
-                {lesson.progress === 0
-                  ? "Start"
-                  : lesson.progress === 100
-                    ? "Review"
-                    : "Continue"}
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </section>
+      <LearningPath />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Path progress</CardTitle>
-          <CardDescription>
-            {completed} of {lessons.length} modules complete · {overall}% overall
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Progress value={overall} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Reading</CardTitle>
-          <CardDescription>Filler notes for educators and students</CardDescription>
-        </CardHeader>
-        <CardContent className="divide-y divide-border">
+      <section id="learn-reading" className="border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <p className="kicker">Guidebook</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight">Reading</h2>
+        </div>
+        <div className="divide-y divide-border">
           {articles.map((article) => (
             <div
               key={article.title}
-              className="flex items-center justify-between gap-4 py-3 first:pt-0 last:pb-0"
+              className="flex items-center justify-between gap-4 px-4 py-3"
             >
               <div>
                 <p className="font-medium">{article.title}</p>
                 <p className="text-sm text-muted-foreground">{article.source}</p>
               </div>
-              <span className="text-xs text-muted-foreground">{article.read}</span>
+              <span className="font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
+                {article.read}
+              </span>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   )
 }
