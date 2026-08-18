@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils"
 import { formatPct } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 export function ChangeText({
   value,
@@ -18,7 +18,7 @@ export function ChangeText({
   return (
     <span
       className={cn(
-        "tabular-nums",
+        "font-mono tabular-nums",
         positive ? "text-gain" : "text-loss",
         className,
       )}

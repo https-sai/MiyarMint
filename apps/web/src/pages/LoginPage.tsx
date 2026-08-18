@@ -10,14 +10,18 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-8 space-y-1 lg:hidden">
-        <p className="font-heading text-lg font-medium">MyrMint</p>
+      <div className="mb-8 lg:hidden">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-primary">DESK</p>
+        <p className="font-heading text-sm font-semibold tracking-[0.18em] uppercase">
+          MyrMint
+        </p>
       </div>
-      <h1 className="font-heading text-2xl font-medium tracking-tight">
+      <p className="kicker">Access</p>
+      <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight uppercase">
         Sign in
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Use your school email to open your paper portfolio.
+      <p className="mt-2 font-mono text-xs text-muted-foreground">
+        School email required. Opens the paper book.
       </p>
       <form
         className="mt-8 space-y-4"
@@ -50,10 +54,10 @@ export function LoginPage() {
           Continue
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        New here?{" "}
+      <p className="mt-6 text-center font-mono text-xs text-muted-foreground">
+        New desk?{" "}
         <Link to="/create-account" className="text-primary hover:underline">
-          Create an account
+          Open an account
         </Link>
       </p>
     </AuthLayout>

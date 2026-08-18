@@ -34,8 +34,8 @@ export function DashboardPage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <PageHeader
-        title={`Welcome back, ${currentUser.name.split(" ")[0]}`}
-        description={`${currentUser.classroom} · paper portfolio`}
+        title="Overview"
+        description={`${currentUser.name} · ${currentUser.classroom}`}
         actions={
           <Button render={<Link to="/trade" />}>Place a trade</Button>
         }
@@ -81,11 +81,11 @@ export function DashboardPage() {
             {watchlist.slice(0, 5).map((row) => (
               <div key={row.ticker} className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="font-medium">{row.ticker}</p>
+                  <p className="font-mono font-medium tracking-wide">{row.ticker}</p>
                   <p className="text-xs text-muted-foreground">{row.name}</p>
                 </div>
                 <div className="text-right">
-                  <p className="tabular-nums">{formatMoney(row.price)}</p>
+                  <p className="font-mono tabular-nums">{formatMoney(row.price)}</p>
                   <ChangeText value={row.changePct} className="text-xs" />
                 </div>
               </div>
@@ -142,9 +142,11 @@ export function DashboardPage() {
             <CardDescription>{currentUser.classroom}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-lg bg-muted/60 p-3">
-              <p className="text-xs text-muted-foreground">Join code</p>
-              <p className="mt-1 font-medium tracking-wider">{currentUser.joinCode}</p>
+            <div className="border border-border bg-muted/60 p-3">
+              <p className="kicker">Join code</p>
+              <p className="mt-1 font-mono text-sm font-medium tracking-[0.22em]">
+                {currentUser.joinCode}
+              </p>
             </div>
             <p className="text-sm text-muted-foreground">
               You are ranked #3 of 8 this month. Only compliant tickers can be
@@ -176,8 +178,10 @@ function StatCard({
     <Card>
       <CardHeader>
         <CardDescription>{label}</CardDescription>
-        <CardTitle className="text-xl tabular-nums">{value}</CardTitle>
-        {hint ? <div className="text-sm">{hint}</div> : null}
+        <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
+          {value}
+        </CardTitle>
+        {hint ? <div className="font-mono text-xs">{hint}</div> : null}
       </CardHeader>
     </Card>
   )

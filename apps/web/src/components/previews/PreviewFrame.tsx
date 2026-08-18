@@ -29,29 +29,25 @@ export function PreviewFrame({
     <Link
       to={to}
       className={cn(
-        "group relative block rounded-2xl focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
+        "group relative block focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
         className,
       )}
     >
-      <div className="pointer-events-none absolute -inset-3 rounded-[1.75rem] bg-primary/30 opacity-40 blur-2xl transition-opacity group-hover:opacity-75" />
-      <div className="relative overflow-hidden rounded-2xl bg-[#0b1220] shadow-[0_0_48px_-16px_#00f5d4] ring-1 ring-primary/30 transition-transform duration-200 group-hover:-translate-y-0.5">
-        <div className="flex items-center gap-1.5 border-b border-white/8 bg-[#070b14] px-3 py-2">
-          <span className="size-1.5 rounded-full bg-white/20" />
-          <span className="size-1.5 rounded-full bg-white/20" />
-          <span className="size-1.5 rounded-full bg-white/20" />
-          <span className="ml-2 truncate text-[10px] tracking-wide text-muted-foreground">
-            myrmint.app{to}
+      <div className="relative overflow-hidden border border-foreground/20 bg-[#0c1018] transition-colors group-hover:border-primary/50">
+        <div className="flex items-center justify-between border-b border-foreground/15 bg-[#05070c] px-3 py-1.5">
+          <span className="font-mono text-[10px] tracking-[0.16em] text-muted-foreground uppercase">
+            {to.replace("/", "")}//live
           </span>
+          <span className="font-mono text-[10px] text-gain">REC</span>
         </div>
         <div aria-hidden className="relative h-52 overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(ellipse_at_18%_-10%,rgba(0,245,212,0.28),transparent_58%)]" />
           <div className="flex h-full">
-            <div className="flex w-9 flex-col items-center gap-2 border-r border-white/8 bg-[#050810] py-3">
+            <div className="flex w-8 flex-col gap-1 border-r border-foreground/15 bg-[#05070c] py-3 pl-2">
               {railItems.map((item) => (
                 <span
                   key={item}
                   className={cn(
-                    "size-1.5 rounded-full",
+                    "h-1 w-4",
                     item === active ? "bg-primary" : "bg-white/15",
                   )}
                 />
@@ -61,9 +57,11 @@ export function PreviewFrame({
           </div>
         </div>
       </div>
-      <div className="relative mt-3 flex items-center justify-between px-1">
-        <span className="text-sm font-medium">{label}</span>
-        <span className="text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="mt-2 flex items-center justify-between">
+        <span className="font-mono text-[11px] tracking-[0.16em] uppercase">
+          {label}
+        </span>
+        <span className="font-mono text-[10px] tracking-[0.14em] text-primary uppercase opacity-0 transition-opacity group-hover:opacity-100">
           Open
         </span>
       </div>

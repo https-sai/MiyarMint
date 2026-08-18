@@ -130,7 +130,7 @@ export function TradePage() {
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div>
-                <p className="text-3xl font-medium tabular-nums">
+                <p className="font-mono text-3xl font-medium tracking-normal tabular-nums">
                   {formatMoney(quote.price)}
                 </p>
                 <ChangeText value={quote.changePct} />
@@ -217,8 +217,8 @@ export function TradePage() {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-4">
-      <span className="text-muted-foreground">{label}</span>
+    <div className="flex justify-between gap-4 font-mono text-xs">
+      <span className="tracking-[0.12em] text-muted-foreground uppercase">{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>
   )

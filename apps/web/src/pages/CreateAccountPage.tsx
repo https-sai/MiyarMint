@@ -17,15 +17,18 @@ export function CreateAccountPage() {
 
   return (
     <AuthLayout>
-      <div className="mb-8 space-y-1 lg:hidden">
-        <p className="font-heading text-lg font-medium">MyrMint</p>
+      <div className="mb-8 lg:hidden">
+        <p className="font-mono text-[10px] tracking-[0.28em] text-primary">DESK</p>
+        <p className="font-heading text-sm font-semibold tracking-[0.18em] uppercase">
+          MyrMint
+        </p>
       </div>
-      <h1 className="font-heading text-2xl font-medium tracking-tight">
-        Create account
+      <p className="kicker">Onboarding</p>
+      <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight uppercase">
+        Open account
       </h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Students start with $100,000 in simulated cash. Educators can open
-        classrooms.
+      <p className="mt-2 font-mono text-xs text-muted-foreground">
+        Students start at $100,000 simulated cash. Educators open classrooms.
       </p>
       <form
         className="mt-8 space-y-4"
@@ -72,8 +75,8 @@ export function CreateAccountPage() {
           Create account
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
+      <p className="mt-6 text-center font-mono text-xs text-muted-foreground">
+        Already on the desk?{" "}
         <Link to="/login" className="text-primary hover:underline">
           Sign in
         </Link>

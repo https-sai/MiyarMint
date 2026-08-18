@@ -15,7 +15,7 @@ export function PortfolioPreview() {
   return (
     <PreviewFrame to="/portfolio" label="Portfolio Preview" active="portfolio">
       <div className="space-y-2.5">
-        <p className="text-[11px] font-medium tracking-tight">Portfolio</p>
+        <p className="kicker">Portfolio</p>
         <div className="grid grid-cols-3 gap-1.5">
           <MiniStat label="Value" value={formatMoney(portfolioSummary.totalValue)} />
           <MiniStat label="Cash" value={formatMoney(portfolioSummary.cash)} />
@@ -28,11 +28,11 @@ export function PortfolioPreview() {
           {previewHoldings.map((row) => (
             <div key={row.ticker} className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-[11px] font-medium">{row.ticker}</p>
-                <p className="text-[9px] text-muted-foreground">{row.shares} sh</p>
+                <p className="font-mono text-[11px] font-medium">{row.ticker}</p>
+                <p className="font-mono text-[9px] text-muted-foreground">{row.shares} SH</p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] tabular-nums">{formatMoney(row.price)}</p>
+                <p className="font-mono text-[11px] tabular-nums">{formatMoney(row.price)}</p>
                 <ChangeText value={row.pnlPct} className="text-[9px]" />
               </div>
             </div>
@@ -45,9 +45,9 @@ export function PortfolioPreview() {
 
 function MiniStat({ label, value }: { label: string; value: ReactNode }) {
   return (
-    <div className="rounded-md bg-white/5 px-1.5 py-1 ring-1 ring-white/8">
-      <p className="text-[8px] text-muted-foreground">{label}</p>
-      <div className="truncate text-[11px] font-medium tabular-nums">{value}</div>
+    <div className="bg-white/5 px-1.5 py-1 ring-1 ring-white/10">
+      <p className="kicker text-[8px]">{label}</p>
+      <div className="truncate font-mono text-[11px] font-medium tabular-nums">{value}</div>
     </div>
   )
 }

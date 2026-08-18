@@ -1,27 +1,19 @@
-import {
-  ArrowLeftRight,
-  BookOpen,
-  Briefcase,
-  LayoutDashboard,
-  Trophy,
-  UserRound,
-} from "lucide-react"
 import { NavLink } from "react-router-dom"
 
 import { cn } from "@/lib/utils"
 
 const items = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/portfolio", label: "Portfolio", icon: Briefcase },
-  { to: "/trade", label: "Trade", icon: ArrowLeftRight },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/learn", label: "Learn", icon: BookOpen },
-  { to: "/account", label: "Account", icon: UserRound },
+  { to: "/dashboard", label: "Dashboard", index: "01" },
+  { to: "/portfolio", label: "Portfolio", index: "02" },
+  { to: "/trade", label: "Trade", index: "03" },
+  { to: "/leaderboard", label: "Leaderboard", index: "04" },
+  { to: "/learn", label: "Learn", index: "05" },
+  { to: "/account", label: "Account", index: "06" },
 ]
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav className="flex flex-col gap-1">
+    <nav className="flex flex-col gap-px">
       {items.map((item) => (
         <NavLink
           key={item.to}
@@ -29,14 +21,14 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           onClick={onNavigate}
           className={({ isActive }) =>
             cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-3 border-l-2 px-3 py-2.5 font-mono text-[11px] tracking-[0.16em] uppercase transition-colors",
               isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-transparent text-muted-foreground hover:border-foreground/20 hover:bg-sidebar-accent hover:text-sidebar-foreground",
             )
           }
         >
-          <item.icon className="size-4" />
+          <span className="w-5 text-[10px] text-muted-foreground">{item.index}</span>
           {item.label}
         </NavLink>
       ))}

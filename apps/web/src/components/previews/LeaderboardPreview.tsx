@@ -20,7 +20,7 @@ export function LeaderboardPreview() {
             <div
               key={row.rank}
               className={cn(
-                "rounded-md px-1.5 py-1.5 ring-1",
+                "px-1.5 py-1.5 ring-1",
                 row.rank === 1
                   ? "bg-primary/10 ring-primary/35"
                   : "bg-white/5 ring-white/8",
@@ -37,7 +37,7 @@ export function LeaderboardPreview() {
             <div
               key={row.rank}
               className={cn(
-                "flex items-center justify-between rounded-md px-1.5 py-1 text-[10px]",
+                "flex items-center justify-between px-1.5 py-1 font-mono text-[10px]",
                 row.isYou && "bg-primary/10",
               )}
             >

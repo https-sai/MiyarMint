@@ -43,7 +43,7 @@ export function PortfolioPage() {
         <Card>
           <CardHeader>
             <CardDescription>Total value</CardDescription>
-            <CardTitle className="text-xl tabular-nums">
+            <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
               {formatMoney(portfolioSummary.totalValue)}
             </CardTitle>
           </CardHeader>
@@ -51,7 +51,7 @@ export function PortfolioPage() {
         <Card>
           <CardHeader>
             <CardDescription>Invested</CardDescription>
-            <CardTitle className="text-xl tabular-nums">
+            <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
               {formatMoney(portfolioSummary.invested)}
             </CardTitle>
           </CardHeader>
@@ -59,7 +59,7 @@ export function PortfolioPage() {
         <Card>
           <CardHeader>
             <CardDescription>Cash</CardDescription>
-            <CardTitle className="text-xl tabular-nums">
+            <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
               {formatMoney(portfolioSummary.cash)}
             </CardTitle>
           </CardHeader>
@@ -67,7 +67,7 @@ export function PortfolioPage() {
         <Card>
           <CardHeader>
             <CardDescription>Unrealized P/L</CardDescription>
-            <CardTitle className="text-xl">
+            <CardTitle className="font-mono text-xl tracking-normal">
               <ChangeText
                 value={enrichedHoldings.reduce((sum, row) => sum + row.pnl, 0)}
                 asMoney
@@ -93,9 +93,9 @@ export function PortfolioPage() {
                     {pct.toFixed(1)}%
                   </span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div className="h-1.5 overflow-hidden bg-muted">
                   <div
-                    className="h-full rounded-full bg-primary"
+                    className="h-full bg-primary"
                     style={{ width: `${pct}%` }}
                   />
                 </div>

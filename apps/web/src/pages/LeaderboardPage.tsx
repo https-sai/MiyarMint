@@ -53,7 +53,7 @@ export function LeaderboardPage() {
         <Card className="border-primary/30">
           <CardHeader>
             <CardDescription>Your standing</CardDescription>
-            <CardTitle className="flex flex-wrap items-baseline gap-3">
+            <CardTitle className="flex flex-wrap items-baseline gap-3 font-mono tracking-normal">
               Rank #{you.rank}
               <ChangeText value={you.returnPct} className="text-base font-normal" />
             </CardTitle>
@@ -73,7 +73,7 @@ export function LeaderboardPage() {
             </CardHeader>
             <CardContent className="flex items-center justify-between">
               <ChangeText value={row.returnPct} />
-              <span className="text-sm tabular-nums text-muted-foreground">
+              <span className="font-mono text-sm tabular-nums text-muted-foreground">
                 {formatMoney(row.value)}
               </span>
             </CardContent>

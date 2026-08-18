@@ -70,9 +70,11 @@ export function AccountPage() {
           <CardDescription>{currentUser.classroom}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="rounded-lg bg-muted/60 p-3">
-            <p className="text-xs text-muted-foreground">Join code</p>
-            <p className="mt-1 font-medium tracking-wider">{currentUser.joinCode}</p>
+          <div className="border border-border bg-muted/60 p-3">
+            <p className="kicker">Join code</p>
+            <p className="mt-1 font-mono text-sm font-medium tracking-[0.22em]">
+              {currentUser.joinCode}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm">
