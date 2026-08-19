@@ -135,7 +135,12 @@ export type HalalScreening = {
   symbol?: string;
   name?: string;
   is_compliant?: boolean | null;
+  compliance_status?: string | null;
   shariah_compliance_status?: string | null;
+  overall_status?: string | null;
+  revenue_breakdown?: Record<string, unknown>;
+  financial_ratios?: Record<string, unknown>;
+  purification_rate?: number | null;
   disposition?: string | null;
   [key: string]: unknown;
 };
@@ -148,8 +153,22 @@ export type ScreeningVerdict = {
 };
 
 export function mapScreeningStatus(raw: HalalScreening): ScreeningStatus {
-  if (raw.is_compliant === true) return "compliant";
-  if (raw.is_compliant === false) return "non_compliant";
+  const label = String(
+    raw.compliance_status ??
+      raw.shariah_compliance_status ??
+      raw.overall_status ??
+      "",
+  )
+    .trim()
+    .toUpperCase();
+  if (raw.is_compliant === true || label === "COMPLIANT") return "compliant";
+  if (
+    raw.is_compliant === false ||
+    label.includes("NON") ||
+    label.includes("FAIL")
+  ) {
+    return "non_compliant";
+  }
   return "under_review";
 }
 

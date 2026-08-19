@@ -1,4 +1,7 @@
+import { Fragment } from "react"
+
 import { ChangeText } from "@/components/ChangeText"
+import { ComplianceDetails } from "@/components/ComplianceDetails"
 import { PageHeader } from "@/components/PageHeader"
 import { QueryState } from "@/components/QueryState"
 import { StatusBadge } from "@/components/StatusBadge"
@@ -149,35 +152,55 @@ export function PortfolioPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {enriched.map((row) => (
-                    <TableRow key={row.ticker}>
-                      <TableCell>
-                        <div className="font-medium">{row.ticker}</div>
-                        <div className="text-xs text-muted-foreground">{row.name}</div>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={row.status} />
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {row.shares}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatMoney(row.avg_cost)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatMoney(row.price)}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {formatMoney(row.marketValue)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div>
-                          <ChangeText value={row.pnl} asMoney />
-                        </div>
-                        <ChangeText value={row.pnlPct} className="text-xs" />
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {enriched.map((row) => {
+                    const screening = stockMap.get(row.ticker)?.screening
+                    return (
+                      <Fragment key={row.ticker}>
+                        <TableRow>
+                          <TableCell>
+                            <div className="font-medium">{row.ticker}</div>
+                            <div className="text-xs text-muted-foreground">{row.name}</div>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge status={row.status} />
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {row.shares}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMoney(row.avg_cost)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMoney(row.price)}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {formatMoney(row.marketValue)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div>
+                              <ChangeText value={row.pnl} asMoney />
+                            </div>
+                            <ChangeText value={row.pnlPct} className="text-xs" />
+                          </TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell colSpan={7} className="bg-muted/30">
+                            <details>
+                              <summary className="cursor-pointer font-mono text-[11px] tracking-[0.14em] text-muted-foreground uppercase">
+                                Screening breakdown · {row.ticker}
+                              </summary>
+                              <div className="mt-4 max-w-2xl">
+                                <ComplianceDetails
+                                  status={row.status}
+                                  data={screening}
+                                />
+                              </div>
+                            </details>
+                          </TableCell>
+                        </TableRow>
+                      </Fragment>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </CardContent>

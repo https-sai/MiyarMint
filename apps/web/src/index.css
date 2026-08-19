@@ -302,3 +302,10 @@
   text-transform: uppercase;
   color: var(--muted-foreground);
 }
+
+@utility font-ar {
+  font-family: "Geeza Pro", "Noto Naskh Arabic", "Arabic Typesetting", "Traditional Arabic", serif;
+  font-feature-settings: normal;
+  letter-spacing: 0;
+  text-transform: none;
+}

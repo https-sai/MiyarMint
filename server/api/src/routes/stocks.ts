@@ -26,6 +26,7 @@ stocksRouter.get("/", verifySupabaseAsymmetricToken, async (_req, res) => {
         status: verdict?.status ?? "under_review",
         last_screened_at: new Date().toISOString(),
         source: "halal_terminal" as const,
+        screening: verdict?.data ?? null,
       };
     });
 

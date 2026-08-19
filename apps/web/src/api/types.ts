@@ -42,12 +42,29 @@ export type PortfolioResponse = {
   starting_cash: number
 }
 
+export type ScreeningData = {
+  symbol?: string
+  name?: string
+  is_compliant?: boolean | null
+  compliance_status?: string | null
+  shariah_compliance_status?: string | null
+  overall_status?: string | null
+  revenue_breakdown?: Record<string, unknown>
+  business_income?: Record<string, unknown>
+  financial_ratios?: Record<string, unknown>
+  purification_rate?: number | null
+  methodologies?: Record<string, unknown>
+  methodology_summary?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export type HalalStock = {
   ticker: string
   company_name: string | null
   status: ScreeningStatus
   last_screened_at: string | null
   source?: "halal_terminal"
+  screening?: ScreeningData | null
 }
 
 export type MarketQuote = {
@@ -70,7 +87,7 @@ export type ScreeningResponse = {
   ticker: string
   company_name: string | null
   status: ScreeningStatus
-  data: unknown
+  data: ScreeningData
 }
 
 export type ClassroomSummary = {

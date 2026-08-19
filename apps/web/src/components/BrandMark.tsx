@@ -2,6 +2,24 @@ import { Link } from "react-router-dom"
 
 import { cn } from "@/lib/utils"
 
+export function ProductName({ className }: { className?: string }) {
+  return (
+    <span className={cn("flex items-baseline gap-2", className)}>
+      <span className="font-heading text-sm font-semibold tracking-[0.18em] uppercase">
+        MyrMint
+      </span>
+      <span
+        lang="ar"
+        dir="rtl"
+        title="Myr"
+        className="font-ar text-base leading-none font-semibold text-primary"
+      >
+        مَيْر
+      </span>
+    </span>
+  )
+}
+
 export function BrandMark({
   to = "/dashboard",
   compact = false,
@@ -18,9 +36,7 @@ export function BrandMark({
         <span className="block font-mono text-[10px] tracking-[0.28em] text-primary">
           DESK
         </span>
-        <span className="block font-heading text-sm font-semibold tracking-[0.18em] uppercase">
-          MyrMint
-        </span>
+        <ProductName />
       </span>
     </Link>
   )

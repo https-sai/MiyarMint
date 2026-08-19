@@ -29,6 +29,7 @@ import { formatMoney } from "@/lib/format"
 import { getLearningProgress } from "@/lib/learn"
 import { formatWhen, isQuoteOk, toNumber } from "@/lib/numbers"
 import { equityCurve, markedHoldings, STARTING_CASH } from "@/lib/portfolio"
+import { PORTFOLIO_PURITY_INDEX } from "@/lib/purity"
 
 export function DashboardPage() {
   const { user, profile } = useAuth()
@@ -88,7 +89,7 @@ export function DashboardPage() {
         loading={portfolioQuery.isPending}
         error={portfolioQuery.error instanceof Error ? portfolioQuery.error.message : null}
       >
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
           <StatCard label="Portfolio value" value={formatMoney(totalValue)} />
           <StatCard
             label="Unrealized P/L"
@@ -104,6 +105,26 @@ export function DashboardPage() {
             label="Total return"
             value={<ChangeText value={totalReturn} asMoney />}
             hint={<ChangeText value={totalReturnPct} />}
+          />
+          <StatCard
+            label="Purity index"
+            value={
+              <span>
+                {PORTFOLIO_PURITY_INDEX}
+                <span className="text-sm font-normal text-muted-foreground"> / 100</span>
+              </span>
+            }
+            hint={
+              <div className="space-y-1.5">
+                <div className="h-1.5 overflow-hidden bg-muted">
+                  <div
+                    className="h-full bg-primary"
+                    style={{ width: `${PORTFOLIO_PURITY_INDEX}%` }}
+                  />
+                </div>
+                <p className="text-muted-foreground">AAOIFI-aligned paper book</p>
+              </div>
+            }
           />
         </section>
       </QueryState>
@@ -249,6 +270,11 @@ export function DashboardPage() {
                       <p className="text-xs text-muted-foreground">
                         {stock?.company_name ?? "—"}
                       </p>
+                      {stock ? (
+                        <div className="mt-1">
+                          <StatusBadge status={stock.status} />
+                        </div>
+                      ) : null}
                     </div>
                     <div className="text-right">
                       <p className="font-mono tabular-nums">

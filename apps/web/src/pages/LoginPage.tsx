@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 
 import { useAuth } from "@/auth/AuthContext"
+import { ProductName } from "@/components/BrandMark"
 import { AuthLayout } from "@/components/layout/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,9 +43,7 @@ export function LoginPage() {
     <AuthLayout>
       <div className="mb-8 lg:hidden">
         <p className="font-mono text-[10px] tracking-[0.28em] text-primary">DESK</p>
-        <p className="font-heading text-sm font-semibold tracking-[0.18em] uppercase">
-          MyrMint
-        </p>
+        <ProductName />
       </div>
       <p className="kicker">Access</p>
       <h1 className="mt-2 font-heading text-3xl font-semibold tracking-tight uppercase">

@@ -11,6 +11,7 @@ import {
 } from "@/api/hooks"
 import { ChangeText } from "@/components/ChangeText"
 import { PageHeader } from "@/components/PageHeader"
+import { ComplianceDetails } from "@/components/ComplianceDetails"
 import { StatusBadge } from "@/components/StatusBadge"
 import { Button } from "@/components/ui/button"
 import {
@@ -329,6 +330,21 @@ export function TradePage() {
                   </Button>
                 ) : null}
               </div>
+              {symbol ? (
+                <div className="sm:col-span-2 border-t border-border pt-4">
+                  <p className="kicker mb-3">Halal Terminal screening</p>
+                  <ComplianceDetails
+                    status={status}
+                    data={screeningQuery.data?.data ?? stock?.screening}
+                    loading={screeningQuery.isPending}
+                    error={
+                      screeningQuery.error instanceof Error
+                        ? screeningQuery.error.message
+                        : null
+                    }
+                  />
+                </div>
+              ) : null}
               {quoteQuery.error instanceof Error ? (
                 <p className="sm:col-span-2 text-sm text-destructive">
                   {quoteQuery.error.message}
