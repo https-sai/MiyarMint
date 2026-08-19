@@ -1,5 +1,5 @@
+import type { ScreeningStatus } from "@/api/types"
 import { Badge } from "@/components/ui/badge"
-import type { ScreeningStatus } from "@/data/mock"
 
 const labels: Record<ScreeningStatus, string> = {
   compliant: "Compliant",

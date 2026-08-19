@@ -1,4 +1,6 @@
-export type ScreeningStatus = "compliant" | "non_compliant" | "under_review"
+import type { ScreeningStatus } from "@/api/types"
+
+export type { ScreeningStatus }
 
 export const currentUser = {
   name: "Amina Rahman",

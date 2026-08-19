@@ -1,5 +1,6 @@
 import { ChangeText } from "@/components/ChangeText"
 import { PageHeader } from "@/components/PageHeader"
+import { QueryState } from "@/components/QueryState"
 import { StatusBadge } from "@/components/StatusBadge"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -18,20 +19,31 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { holdings, portfolioSummary, trades } from "@/data/mock"
+import { usePortfolioQuery, useQuotesQuery, useStocksQuery } from "@/api/hooks"
 import { formatMoney } from "@/lib/format"
-
-const enrichedHoldings = holdings.map((row) => {
-  const marketValue = row.shares * row.price
-  const cost = row.shares * row.avgCost
-  const pnl = marketValue - cost
-  const pnlPct = (pnl / cost) * 100
-  return { ...row, marketValue, pnl, pnlPct }
-})
-
-const totalInvested = enrichedHoldings.reduce((sum, row) => sum + row.marketValue, 0)
+import { formatWhen, isQuoteOk, toNumber } from "@/lib/numbers"
+import { markedHoldings, STARTING_CASH } from "@/lib/portfolio"
 
 export function PortfolioPage() {
+  const portfolioQuery = usePortfolioQuery()
+  const stocksQuery = useStocksQuery()
+  const holdings = portfolioQuery.data?.holdings ?? []
+  const quotesQuery = useQuotesQuery(holdings.map((row) => row.ticker))
+  const stockMap = new Map(
+    (stocksQuery.data?.stocks ?? []).map((row) => [row.ticker, row] as const),
+  )
+  const quoteMap = new Map(
+    (quotesQuery.data?.quotes ?? [])
+      .filter(isQuoteOk)
+      .map((row) => [row.ticker, { price: row.price, changePct: row.changePct }] as const),
+  )
+  const enriched = markedHoldings(holdings, quoteMap, stockMap)
+  const cash = toNumber(portfolioQuery.data?.cash_balance)
+  const invested = enriched.reduce((sum, row) => sum + row.marketValue, 0)
+  const totalValue = cash + invested
+  const trades = portfolioQuery.data?.trades ?? []
+  const totalInvested = invested || 1
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <PageHeader
@@ -39,69 +51,80 @@ export function PortfolioPage() {
         description="Holdings, cash, and realized paper trades."
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader>
-            <CardDescription>Total value</CardDescription>
-            <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
-              {formatMoney(portfolioSummary.totalValue)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Invested</CardDescription>
-            <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
-              {formatMoney(portfolioSummary.invested)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Cash</CardDescription>
-            <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
-              {formatMoney(portfolioSummary.cash)}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardDescription>Unrealized P/L</CardDescription>
-            <CardTitle className="font-mono text-xl tracking-normal">
-              <ChangeText
-                value={enrichedHoldings.reduce((sum, row) => sum + row.pnl, 0)}
-                asMoney
-              />
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      </section>
+      <QueryState
+        loading={portfolioQuery.isPending}
+        error={portfolioQuery.error instanceof Error ? portfolioQuery.error.message : null}
+      >
+        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Card>
+            <CardHeader>
+              <CardDescription>Total value</CardDescription>
+              <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
+                {formatMoney(totalValue)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Invested</CardDescription>
+              <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
+                {formatMoney(invested)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Cash</CardDescription>
+              <CardTitle className="font-mono text-xl font-medium tracking-normal tabular-nums">
+                {formatMoney(cash)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardDescription>Unrealized P/L</CardDescription>
+              <CardTitle className="font-mono text-xl tracking-normal">
+                <ChangeText
+                  value={enriched.reduce((sum, row) => sum + row.pnl, 0)}
+                  asMoney
+                />
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        </section>
+      </QueryState>
 
       <Card>
         <CardHeader>
           <CardTitle>Allocation</CardTitle>
-          <CardDescription>Share of invested capital by ticker</CardDescription>
+          <CardDescription>
+            Share of invested capital by ticker · vs {formatMoney(STARTING_CASH)} start
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {enrichedHoldings.map((row) => {
-            const pct = (row.marketValue / totalInvested) * 100
-            return (
-              <div key={row.ticker} className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{row.ticker}</span>
-                  <span className="tabular-nums text-muted-foreground">
-                    {pct.toFixed(1)}%
-                  </span>
+          {enriched.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No open lots.</p>
+          ) : (
+            enriched.map((row) => {
+              const pct = (row.marketValue / totalInvested) * 100
+              return (
+                <div key={row.ticker} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium">{row.ticker}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {pct.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden bg-muted">
+                    <div
+                      className="h-full bg-primary"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-1.5 overflow-hidden bg-muted">
-                  <div
-                    className="h-full bg-primary"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            )
-          })}
+              )
+            })
+          )}
         </CardContent>
       </Card>
 
@@ -126,7 +149,7 @@ export function PortfolioPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {enrichedHoldings.map((row) => (
+                  {enriched.map((row) => (
                     <TableRow key={row.ticker}>
                       <TableCell>
                         <div className="font-medium">{row.ticker}</div>
@@ -139,7 +162,7 @@ export function PortfolioPage() {
                         {row.shares}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatMoney(row.avgCost)}
+                        {formatMoney(row.avg_cost)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatMoney(row.price)}
@@ -177,7 +200,7 @@ export function PortfolioPage() {
                   {trades.map((trade) => (
                     <TableRow key={trade.id}>
                       <TableCell className="text-muted-foreground">
-                        {trade.executedAt}
+                        {formatWhen(trade.executed_at)}
                       </TableCell>
                       <TableCell className="font-medium">{trade.ticker}</TableCell>
                       <TableCell>
@@ -192,10 +215,10 @@ export function PortfolioPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {trade.quantity}
+                        {toNumber(trade.quantity)}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {formatMoney(trade.price)}
+                        {formatMoney(toNumber(trade.price))}
                       </TableCell>
                     </TableRow>
                   ))}

@@ -26,7 +26,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
           </p>
           <p className="max-w-sm font-mono text-xs leading-relaxed text-muted-foreground">
             Halal-screened equities only. Each book opens at $100,000. Orders
-            fill against last trade — no live routing.
+            fill against the Halal Terminal quote — no live routing.
           </p>
         </div>
       </aside>

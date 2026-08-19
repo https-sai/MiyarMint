@@ -1,8 +1,19 @@
 import { Router } from "express";
 import { supabase } from "../services/supabase.js";
 import { verifySupabaseAsymmetricToken } from "../middleware/auth.js";
+import { aggregateHoldings } from "../lib/holdings.js";
+import { STARTING_CASH, toNumber } from "../lib/numbers.js";
 
 export const portfoliosRouter = Router();
+
+type TradeRow = {
+  id: string;
+  ticker: string;
+  side: "buy" | "sell";
+  quantity: number | string;
+  price: number | string;
+  executed_at: string;
+};
 
 async function ensureStudentPortfolio(studentId: string) {
   const { data: existing, error: lookupError } = await supabase
@@ -57,18 +68,29 @@ portfoliosRouter.get(
 
       const portfolio = await ensureStudentPortfolio(studentId);
 
-      const { data: holdings, error: holdingsError } = await supabase
+      const { data: trades, error: tradesError } = await supabase
         .from("trades")
         .select("id, ticker, side, quantity, price, executed_at")
         .eq("portfolio_id", portfolio.id)
-        .order("executed_at", { ascending: false })
-        .limit(25);
+        .order("executed_at", { ascending: false });
 
-      if (holdingsError) throw holdingsError;
+      if (tradesError) throw tradesError;
+
+      const tradeRows = (trades ?? []) as TradeRow[];
+      const holdings = aggregateHoldings(tradeRows);
+      const cash = toNumber(portfolio.cash_balance);
+      const investedCost = holdings.reduce(
+        (sum, row) => sum + row.shares * row.avg_cost,
+        0,
+      );
 
       res.json({
         portfolio,
-        trades: holdings ?? [],
+        trades: tradeRows,
+        holdings,
+        cash_balance: cash,
+        invested_cost: investedCost,
+        starting_cash: STARTING_CASH,
       });
     } catch (error) {
       const message =

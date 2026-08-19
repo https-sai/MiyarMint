@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { supabase } from "../services/supabase.js";
-import { getLastQuote } from "../services/massive.js";
+import { getQuote, getScreeningStatus } from "../services/halalTerminal.js";
 import { sendExpoPush } from "../services/notifications.js";
 import { verifySupabaseAsymmetricToken } from "../middleware/auth.js";
+import { aggregateHoldings, sharesForTicker } from "../lib/holdings.js";
+import { toNumber } from "../lib/numbers.js";
 
 export const tradesRouter = Router();
 
@@ -26,16 +28,21 @@ tradesRouter.post("/", verifySupabaseAsymmetricToken, async (req, res) => {
   }
 
   try {
-    const { data: screening, error: screeningError } = await supabase
+    const { data: listed, error: listedError } = await supabase
       .from("halal_stock_list")
-      .select("ticker, status")
+      .select("ticker")
       .eq("ticker", ticker)
       .maybeSingle();
-    if (screeningError) throw screeningError;
+    if (listedError) throw listedError;
+    if (!listed) {
+      res.status(400).json({ error: "Ticker is not on the classroom book." });
+      return;
+    }
 
-    if (!screening || screening.status !== "compliant") {
+    const screening = await getScreeningStatus(ticker);
+    if (screening.status !== "compliant") {
       res.status(400).json({
-        error: "Ticker is not marked compliant in halal_stock_list.",
+        error: "Ticker is not Shariah-compliant according to Halal Terminal.",
       });
       return;
     }
@@ -51,18 +58,31 @@ tradesRouter.post("/", verifySupabaseAsymmetricToken, async (req, res) => {
       return;
     }
 
-    const quote = (await getLastQuote(ticker)) as {
-      results?: { p?: number };
-      price?: number;
-    };
-    const price = Number(quote.results?.p ?? quote.price);
+    if (side === "sell") {
+      const { data: trades, error: tradesError } = await supabase
+        .from("trades")
+        .select("ticker, side, quantity, price")
+        .eq("portfolio_id", portfolio.id);
+      if (tradesError) throw tradesError;
+
+      const held = sharesForTicker(aggregateHoldings(trades ?? []), ticker);
+      if (held + 1e-8 < quantity) {
+        res.status(400).json({
+          error: `Insufficient shares. You hold ${held}.`,
+        });
+        return;
+      }
+    }
+
+    const quote = await getQuote(ticker);
+    const price = quote.price;
     if (!Number.isFinite(price) || price <= 0) {
       res.status(502).json({ error: "Could not resolve a trade price." });
       return;
     }
 
     const notional = price * quantity;
-    const cash = Number(portfolio.cash_balance);
+    const cash = toNumber(portfolio.cash_balance);
 
     if (side === "buy" && cash < notional) {
       res.status(400).json({ error: "Insufficient cash balance." });

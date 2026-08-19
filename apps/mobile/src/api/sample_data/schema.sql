@@ -3,6 +3,7 @@ create table profiles (
   role text check (role in ('student', 'educator', 'admin')) not null default 'student',
   display_name text,
   push_token text,
+  leaderboard_visible boolean not null default true,
   created_at timestamptz default now()
 );
 
@@ -47,3 +48,4 @@ create table trades (
 
 -- Run once against an existing project:
 -- alter table profiles add column if not exists push_token text;
+-- alter table profiles add column if not exists leaderboard_visible boolean not null default true;

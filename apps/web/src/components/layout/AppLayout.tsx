@@ -2,6 +2,7 @@ import { Menu } from "lucide-react"
 import { useState } from "react"
 import { Link, Outlet } from "react-router-dom"
 
+import { useAuth } from "@/auth/AuthContext"
 import { BrandMark } from "@/components/BrandMark"
 import { SessionClock } from "@/components/SessionClock"
 import { TickerTape } from "@/components/TickerTape"
@@ -16,9 +17,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { currentUser } from "@/data/mock"
+import { initials } from "@/lib/numbers"
 
 function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
+  const { user, profile } = useAuth()
+  const name = profile?.display_name ?? user?.email ?? "Desk"
+
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-sidebar-border px-4 py-5">
@@ -36,15 +40,15 @@ function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
       >
         <Avatar size="sm">
           <AvatarFallback className="bg-primary/15 font-mono text-primary">
-            {currentUser.initials}
+            {initials(profile?.display_name, user?.email)}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <p className="truncate font-mono text-xs tracking-wide uppercase">
-            {currentUser.name}
+            {name}
           </p>
           <p className="truncate font-mono text-[10px] tracking-[0.14em] text-muted-foreground uppercase">
-            {currentUser.role}
+            {profile?.role ?? "student"}
           </p>
         </div>
       </Link>
@@ -89,7 +93,7 @@ export function AppLayout() {
                 <BrandMark compact />
               </div>
               <p className="hidden font-mono text-[10px] tracking-[0.18em] text-muted-foreground uppercase sm:block lg:inline">
-                NYSE · Halal book · Paper
+                Paper Trading · Fully Simulated Environment
               </p>
             </div>
             <SessionClock />

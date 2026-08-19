@@ -7,3 +7,4 @@ build/
 EOF
 .vercel
 .env*
+!.env.example

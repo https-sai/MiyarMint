@@ -8,9 +8,10 @@ export function Sparkline({
   const min = Math.min(...data)
   const max = Math.max(...data)
   const span = max - min || 1
+  const denom = Math.max(data.length - 1, 1)
   const points = data
     .map((value, index) => {
-      const x = (index / (data.length - 1)) * 100
+      const x = (index / denom) * 100
       const y = 100 - ((value - min) / span) * 100
       return `${x},${y}`
     })

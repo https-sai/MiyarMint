@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
+import { PublicOnly, RequireAuth } from "@/auth/guards"
 import { AppLayout } from "@/components/layout/AppLayout"
 import { AccountPage } from "@/pages/AccountPage"
 import { CreateAccountPage } from "@/pages/CreateAccountPage"
@@ -14,9 +15,29 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/create-account" element={<CreateAccountPage />} />
-        <Route element={<AppLayout />}>
+        <Route
+          path="/login"
+          element={
+            <PublicOnly>
+              <LoginPage />
+            </PublicOnly>
+          }
+        />
+        <Route
+          path="/create-account"
+          element={
+            <PublicOnly>
+              <CreateAccountPage />
+            </PublicOnly>
+          }
+        />
+        <Route
+          element={
+            <RequireAuth>
+              <AppLayout />
+            </RequireAuth>
+          }
+        >
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/portfolio" element={<PortfolioPage />} />
           <Route path="/trade" element={<TradePage />} />

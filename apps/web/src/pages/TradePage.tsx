@@ -1,6 +1,14 @@
 import { Search } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, type FormEvent } from "react"
 
+import type { ScreeningStatus } from "@/api/types"
+import {
+  usePlaceTradeMutation,
+  usePortfolioQuery,
+  useQuoteQuery,
+  useScreeningQuery,
+  useStocksQuery,
+} from "@/api/hooks"
 import { ChangeText } from "@/components/ChangeText"
 import { PageHeader } from "@/components/PageHeader"
 import { StatusBadge } from "@/components/StatusBadge"
@@ -23,55 +31,108 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  holdings,
-  portfolioSummary,
-  quotes,
-  trades,
-  watchlist,
-} from "@/data/mock"
+import { useAuth } from "@/auth/AuthContext"
+import { useWatchlist } from "@/lib/desk"
 import { formatMoney } from "@/lib/format"
+import { formatVolume, formatWhen, toNumber } from "@/lib/numbers"
+import { readPreferences } from "@/lib/preferences"
+import { tradeSchema } from "@/lib/schemas"
 import { cn } from "@/lib/utils"
 
-const catalog = Object.entries(quotes).map(([ticker, quote]) => ({
-  ticker,
-  ...quote,
-}))
-
 export function TradePage() {
+  const { user } = useAuth()
   const [ticker, setTicker] = useState("AAPL")
   const [query, setQuery] = useState("")
+  const [searchOpen, setSearchOpen] = useState(false)
   const [quantity, setQuantity] = useState("1")
   const [side, setSide] = useState<"buy" | "sell">("buy")
   const [notice, setNotice] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
 
-  const symbol = ticker.toUpperCase()
-  const quote = quotes[symbol] ?? quotes.AAPL
+  const symbol = ticker.trim().toUpperCase()
+  const stocksQuery = useStocksQuery()
+  const stocks = useMemo(
+    () => stocksQuery.data?.stocks ?? [],
+    [stocksQuery.data?.stocks],
+  )
+  const fallbackWatch = stocks
+    .filter((row) => row.status === "compliant")
+    .slice(0, 8)
+    .map((row) => row.ticker)
+  const { tickers: watchTickers, setWatchlist } = useWatchlist(fallbackWatch)
+  const portfolioQuery = usePortfolioQuery()
+  const quoteQuery = useQuoteQuery(symbol)
+  const screeningQuery = useScreeningQuery(symbol)
+  const placeTrade = usePlaceTradeMutation()
+
+  const stock = stocks.find((row) => row.ticker === symbol)
+  const status: ScreeningStatus | null =
+    screeningQuery.data?.status ?? stock?.status ?? null
+  const quote = quoteQuery.data
+  const cash = toNumber(portfolioQuery.data?.cash_balance)
+  const holdings = portfolioQuery.data?.holdings ?? []
+  const trades = portfolioQuery.data?.trades ?? []
   const estimated = useMemo(() => {
     const qty = Number(quantity) || 0
-    return qty * quote.price
-  }, [quantity, quote.price])
+    return qty * (quote?.price ?? 0)
+  }, [quantity, quote?.price])
 
-  const canTrade = quote.status === "compliant"
+  const canTrade = status === "compliant" && Boolean(quote?.price)
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase()
     if (!needle) return []
-    return catalog.filter(
+    return stocks.filter(
       (row) =>
         row.ticker.toLowerCase().includes(needle) ||
-        row.name.toLowerCase().includes(needle),
+        (row.company_name ?? "").toLowerCase().includes(needle),
     )
-  }, [query])
+  }, [query, stocks])
 
   function selectTicker(next: string) {
     setTicker(next)
+    setQuery("")
+    setSearchOpen(false)
+    setNotice(null)
+    setFormError(null)
+  }
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const parsed = tradeSchema.safeParse({ ticker: symbol, side, quantity })
+    if (!parsed.success) {
+      setFormError(parsed.error.issues[0]?.message ?? "Invalid order.")
+      return
+    }
+    setFormError(null)
+    setNotice(null)
+    try {
+      const result = await placeTrade.mutateAsync(parsed.data)
+      const confirmations = user?.id
+        ? readPreferences(user.id).tradeConfirmations
+        : true
+      if (confirmations) {
+        setNotice(
+          `${result.trade.side.toUpperCase()} ${result.trade.quantity} ${result.trade.ticker} filled at ${formatMoney(toNumber(result.trade.price))}`,
+        )
+      }
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Trade failed.")
+    }
   }
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
       <PageHeader
         title="Trade"
-        description="Orders fill at the last-trade quote. Only compliant tickers can be traded."
+        description="Orders fill at the Halal Terminal quote. Only compliant tickers can be traded."
+        actions={
+          <div className="text-right">
+            <p className="kicker">Available balance</p>
+            <p className="font-mono text-lg font-medium tracking-normal tabular-nums">
+              {formatMoney(cash)}
+            </p>
+          </div>
+        }
       />
 
       <Card>
@@ -81,23 +142,40 @@ export function TradePage() {
             Look up a ticker or company name, then load it into the ticket
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent
+          className="space-y-3"
+          onBlur={(event) => {
+            const next = event.relatedTarget
+            if (next instanceof Node && event.currentTarget.contains(next)) return
+            setSearchOpen(false)
+          }}
+        >
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id="stock-search"
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={(event) => {
+                setQuery(event.target.value)
+                setSearchOpen(true)
+              }}
+              onFocus={() => setSearchOpen(true)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") setSearchOpen(false)
+              }}
               placeholder="Search ticker or name — AAPL, Microsoft…"
               className="h-10 pl-9"
               autoComplete="off"
               aria-label="Search stocks"
+              aria-expanded={searchOpen && Boolean(query.trim())}
             />
           </div>
 
-          {query.trim() ? (
+          {searchOpen && query.trim() ? (
             <div className="divide-y divide-border border border-border">
-              {results.length === 0 ? (
+              {stocksQuery.isPending ? (
+                <p className="px-3 py-4 text-sm text-muted-foreground">Loading names…</p>
+              ) : results.length === 0 ? (
                 <p className="px-3 py-4 text-sm text-muted-foreground">
                   No names matched “{query.trim()}”.
                 </p>
@@ -106,6 +184,7 @@ export function TradePage() {
                   <button
                     key={row.ticker}
                     type="button"
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectTicker(row.ticker)}
                     className={cn(
                       "flex w-full items-center justify-between gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/60",
@@ -117,18 +196,10 @@ export function TradePage() {
                         {row.ticker}
                       </p>
                       <p className="truncate text-xs text-muted-foreground">
-                        {row.name}
+                        {row.company_name ?? "—"}
                       </p>
                     </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      <div className="text-right">
-                        <p className="font-mono tabular-nums">
-                          {formatMoney(row.price)}
-                        </p>
-                        <ChangeText value={row.changePct} className="text-xs" />
-                      </div>
-                      <StatusBadge status={row.status} />
-                    </div>
+                    <StatusBadge status={row.status} />
                   </button>
                 ))
               )}
@@ -144,15 +215,7 @@ export function TradePage() {
             <CardDescription>Paper buy or sell · no live routing</CardDescription>
           </CardHeader>
           <CardContent>
-            <form
-              className="space-y-4"
-              onSubmit={(event) => {
-                event.preventDefault()
-                setNotice(
-                  `${side.toUpperCase()} ${quantity} ${symbol} queued at ${formatMoney(quote.price)}`,
-                )
-              }}
-            >
+            <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
               <div className="space-y-2">
                 <Label htmlFor="ticker">Ticker</Label>
                 <Input
@@ -166,7 +229,9 @@ export function TradePage() {
                 <Label>Side</Label>
                 <Tabs
                   value={side}
-                  onValueChange={(value) => setSide(value as "buy" | "sell")}
+                  onValueChange={(value) => {
+                    if (value === "buy" || value === "sell") setSide(value)
+                  }}
                 >
                   <TabsList className="w-full">
                     <TabsTrigger value="buy" className="flex-1">
@@ -190,22 +255,27 @@ export function TradePage() {
                 />
               </div>
               <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Available balance</span>
+                <span className="tabular-nums">{formatMoney(cash)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Estimated</span>
                 <span className="tabular-nums">{formatMoney(estimated)}</span>
               </div>
               <Button
                 type="submit"
                 className="w-full"
-                disabled={!canTrade}
+                disabled={!canTrade || placeTrade.isPending}
                 variant={side === "sell" ? "destructive" : "default"}
               >
-                {canTrade
-                  ? `${side === "buy" ? "Buy" : "Sell"} ${symbol}`
-                  : "Blocked — not compliant"}
+                {status && status !== "compliant"
+                  ? "Blocked — not compliant"
+                  : `${side === "buy" ? "Buy" : "Sell"} ${symbol || "—"}`}
               </Button>
-              {notice ? (
-                <p className="text-sm text-primary">{notice}</p>
+              {formError ? (
+                <p className="text-sm text-destructive">{formError}</p>
               ) : null}
+              {notice ? <p className="text-sm text-primary">{notice}</p> : null}
             </form>
           </CardContent>
         </Card>
@@ -214,30 +284,56 @@ export function TradePage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {quote.name}{" "}
-                <span className="text-muted-foreground">({symbol || "AAPL"})</span>
+                {stock?.company_name ?? (symbol || "Select a ticker")}{" "}
+                {symbol ? (
+                  <span className="text-muted-foreground">({symbol})</span>
+                ) : null}
               </CardTitle>
-              <CardDescription>Last trade quote</CardDescription>
+              <CardDescription>Halal Terminal quote</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="font-mono text-3xl font-medium tracking-normal tabular-nums">
-                  {formatMoney(quote.price)}
+                  {quote ? formatMoney(quote.price) : "—"}
                 </p>
-                <ChangeText value={quote.changePct} />
+                {quote?.changePct != null ? (
+                  <ChangeText value={quote.changePct} />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Change unavailable</p>
+                )}
               </div>
               <div className="space-y-1 text-sm">
-                <Row label="Open" value={formatMoney(quote.open)} />
-                <Row label="High" value={formatMoney(quote.high)} />
-                <Row label="Low" value={formatMoney(quote.low)} />
-                <Row label="Volume" value={quote.volume} />
+                <Row label="Open" value={quote?.open != null ? formatMoney(quote.open) : "—"} />
+                <Row label="High" value={quote?.high != null ? formatMoney(quote.high) : "—"} />
+                <Row label="Low" value={quote?.low != null ? formatMoney(quote.low) : "—"} />
+                <Row label="Volume" value={formatVolume(quote?.volume ?? null)} />
               </div>
-              <div className="sm:col-span-2 flex items-center gap-3">
-                <StatusBadge status={quote.status} />
+              <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+                {status ? <StatusBadge status={status} /> : null}
                 <p className="text-sm text-muted-foreground">
-                  Buying power {formatMoney(portfolioSummary.cash)}
+                  Available balance {formatMoney(cash)}
                 </p>
+                {symbol ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const next = watchTickers.includes(symbol)
+                        ? watchTickers.filter((item) => item !== symbol)
+                        : [...watchTickers, symbol]
+                      setWatchlist(next)
+                    }}
+                  >
+                    {watchTickers.includes(symbol) ? "Remove from watchlist" : "Add to watchlist"}
+                  </Button>
+                ) : null}
               </div>
+              {quoteQuery.error instanceof Error ? (
+                <p className="sm:col-span-2 text-sm text-destructive">
+                  {quoteQuery.error.message}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -247,17 +343,21 @@ export function TradePage() {
               <CardDescription>From your paper holdings</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap gap-2">
-              {holdings.map((row) => (
-                <Button
-                  key={row.ticker}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => selectTicker(row.ticker)}
-                >
-                  {row.ticker} · {row.shares}
-                </Button>
-              ))}
+              {holdings.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No open lots.</p>
+              ) : (
+                holdings.map((row) => (
+                  <Button
+                    key={row.ticker}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => selectTicker(row.ticker)}
+                  >
+                    {row.ticker} · {row.shares}
+                  </Button>
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -274,36 +374,31 @@ export function TradePage() {
               <TableRow>
                 <TableHead>Ticker</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Change</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {watchlist.map((row) => (
-                <TableRow
-                  key={row.ticker}
-                  className={cn(
-                    "cursor-pointer",
-                    row.ticker === symbol && "bg-primary/5",
-                  )}
-                  onClick={() => selectTicker(row.ticker)}
-                >
-                  <TableCell className="font-mono font-medium tracking-wide">
-                    {row.ticker}
-                  </TableCell>
-                  <TableCell>{row.name}</TableCell>
-                  <TableCell className="text-right font-mono tabular-nums">
-                    {formatMoney(row.price)}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <ChangeText value={row.changePct} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge status={row.status} />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {watchTickers.map((item) => {
+                const row = stocks.find((stockRow) => stockRow.ticker === item)
+                return (
+                  <TableRow
+                    key={item}
+                    className={cn(
+                      "cursor-pointer",
+                      item === symbol && "bg-primary/5",
+                    )}
+                    onClick={() => selectTicker(item)}
+                  >
+                    <TableCell className="font-mono font-medium tracking-wide">
+                      {item}
+                    </TableCell>
+                    <TableCell>{row?.company_name ?? "—"}</TableCell>
+                    <TableCell>
+                      {row ? <StatusBadge status={row.status} /> : "—"}
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -328,7 +423,7 @@ export function TradePage() {
               {trades.slice(0, 6).map((trade) => (
                 <TableRow key={trade.id}>
                   <TableCell className="text-muted-foreground">
-                    {trade.executedAt}
+                    {formatWhen(trade.executed_at)}
                   </TableCell>
                   <TableCell className="font-medium">{trade.ticker}</TableCell>
                   <TableCell
@@ -337,10 +432,10 @@ export function TradePage() {
                     {trade.side.toUpperCase()}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {trade.quantity}
+                    {toNumber(trade.quantity)}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {formatMoney(trade.price)}
+                    {formatMoney(toNumber(trade.price))}
                   </TableCell>
                 </TableRow>
               ))}

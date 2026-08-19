@@ -1,5 +1,7 @@
+import { useState, type FormEvent } from "react"
 import { Link, useNavigate } from "react-router-dom"
 
+import { useAuth } from "@/auth/AuthContext"
 import { AuthLayout } from "@/components/layout/AuthLayout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,9 +13,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { createAccountSchema } from "@/lib/schemas"
 
 export function CreateAccountPage() {
   const navigate = useNavigate()
+  const { signUp } = useAuth()
+  const [role, setRole] = useState<"student" | "educator">("student")
+  const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const parsed = createAccountSchema.safeParse({
+      displayName: form.get("displayName"),
+      email: form.get("email"),
+      password: form.get("password"),
+      role,
+    })
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Check the form and try again.")
+      return
+    }
+
+    setError(null)
+    setNotice(null)
+    setPending(true)
+    try {
+      const result = await signUp({
+        email: parsed.data.email,
+        password: parsed.data.password,
+        displayName: parsed.data.displayName,
+        role: parsed.data.role,
+      })
+      if (result.needsEmailConfirmation) {
+        setNotice("Check your school email to confirm the account, then sign in.")
+        return
+      }
+      navigate("/dashboard", { replace: true })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create account.")
+    } finally {
+      setPending(false)
+    }
+  }
 
   return (
     <AuthLayout>
@@ -30,29 +74,23 @@ export function CreateAccountPage() {
       <p className="mt-2 font-mono text-xs text-muted-foreground">
         Students start at $100,000 simulated cash. Educators open classrooms.
       </p>
-      <form
-        className="mt-8 space-y-4"
-        onSubmit={(event) => {
-          event.preventDefault()
-          navigate("/dashboard")
-        }}
-      >
+      <form className="mt-8 space-y-4" onSubmit={(event) => void onSubmit(event)}>
         <div className="space-y-2">
-          <Label htmlFor="name">Display name</Label>
-          <Input id="name" defaultValue="Amina Rahman" className="h-10" />
+          <Label htmlFor="displayName">Display name</Label>
+          <Input id="displayName" name="displayName" className="h-10" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">School email</Label>
-          <Input
-            id="email"
-            type="email"
-            defaultValue="amina@lincoln.edu"
-            className="h-10"
-          />
+          <Input id="email" name="email" type="email" className="h-10" required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="role">Role</Label>
-          <Select defaultValue="student">
+          <Select
+            value={role}
+            onValueChange={(value) => {
+              if (value === "student" || value === "educator") setRole(value)
+            }}
+          >
             <SelectTrigger id="role" className="h-10 w-full">
               <SelectValue />
             </SelectTrigger>
@@ -66,13 +104,17 @@ export function CreateAccountPage() {
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
+            name="password"
             type="password"
-            defaultValue="password"
+            autoComplete="new-password"
             className="h-10"
+            required
           />
         </div>
-        <Button type="submit" className="h-10 w-full">
-          Create account
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {notice ? <p className="text-sm text-primary">{notice}</p> : null}
+        <Button type="submit" className="h-10 w-full" disabled={pending}>
+          {pending ? "Creating…" : "Create account"}
         </Button>
       </form>
       <p className="mt-6 text-center font-mono text-xs text-muted-foreground">
