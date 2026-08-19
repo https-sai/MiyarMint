@@ -13,6 +13,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.json({
+    service: "miyarmint-api",
+    status: "ok",
+    health: "/health",
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
